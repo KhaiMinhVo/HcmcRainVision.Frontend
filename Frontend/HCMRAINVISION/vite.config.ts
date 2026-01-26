@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite'
  */
 const getBasePath = (): string => {
   // Repository name: HcmcRainVision.Frontend
-  const REPO_NAME = 'HcmcRainVision.Frontend'
+  const REPO_NAME = 'HcmcRainVision.Frontend'  
   
   if (process.env.GITHUB_REPOSITORY) {
     const repoName = process.env.GITHUB_REPOSITORY.split('/')[1]
