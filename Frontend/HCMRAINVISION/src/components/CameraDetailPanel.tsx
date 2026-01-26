@@ -1,6 +1,11 @@
+/**
+ * CameraDetailPanel Component
+ * Bottom sheet (mobile) / Sidebar (desktop) showing camera details and video
+ */
+
 import { useEffect } from 'react';
-import type { CameraInfo } from '../data/mockRainData';
-import type { RainDataPoint } from '../data/mockRainData';
+import type { CameraInfo, RainDataPoint } from '../types';
+import { RAIN_LEVEL_CONFIG } from '../constants';
 
 interface CameraDetailPanelProps {
   camera: CameraInfo | null;
@@ -9,12 +14,44 @@ interface CameraDetailPanelProps {
   onClose: () => void;
 }
 
+/**
+ * Get rain status information
+ */
+const getRainStatus = (rainLevel: number) => {
+  if (rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN) {
+    return {
+      level: RAIN_LEVEL_CONFIG.NO_RAIN,
+      label: 'No Rain',
+      color: 'bg-gray-200',
+      textColor: 'text-gray-700',
+      icon: '☀️',
+    };
+  }
+  if (rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN) {
+    return {
+      level: RAIN_LEVEL_CONFIG.LIGHT_RAIN,
+      label: 'Light Rain',
+      color: 'bg-yellow-400',
+      textColor: 'text-yellow-900',
+      icon: '🌦️',
+    };
+  }
+  return {
+    level: RAIN_LEVEL_CONFIG.HEAVY_RAIN,
+    label: 'Heavy Rain',
+    color: 'bg-red-500',
+    textColor: 'text-white',
+    icon: '🌧️',
+  };
+};
+
 export default function CameraDetailPanel({
   camera,
   rainData,
   isOpen,
   onClose,
 }: CameraDetailPanelProps) {
+  // Prevent body scroll when panel is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -28,35 +65,8 @@ export default function CameraDetailPanel({
 
   if (!camera || !isOpen) return null;
 
-  const getRainStatus = () => {
-    if (!rainData || rainData.rainLevel === 0) {
-      return {
-        level: 0,
-        label: 'No Rain',
-        color: 'bg-gray-200',
-        textColor: 'text-gray-700',
-        icon: '☀️',
-      };
-    }
-    if (rainData.rainLevel === 1) {
-      return {
-        level: 1,
-        label: 'Light Rain',
-        color: 'bg-yellow-400',
-        textColor: 'text-yellow-900',
-        icon: '🌦️',
-      };
-    }
-    return {
-      level: 2,
-      label: 'Heavy Rain',
-      color: 'bg-red-500',
-      textColor: 'text-white',
-      icon: '🌧️',
-    };
-  };
-
-  const rainStatus = getRainStatus();
+  const rainLevel = rainData?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
+  const rainStatus = getRainStatus(rainLevel);
   const lastUpdate = rainData?.timestamp
     ? new Date(rainData.timestamp).toLocaleString('vi-VN')
     : 'N/A';
@@ -150,9 +160,9 @@ export default function CameraDetailPanel({
                   <p className="text-sm">Live Camera Feed</p>
                   <p className="text-xs mt-1 opacity-75">Mock Video Stream</p>
                 </div>
-                
+
                 {/* Rain Overlay Indicator */}
-                {rainStatus.level > 0 && (
+                {rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN && (
                   <div className="absolute top-2 right-2">
                     <div className={`${rainStatus.color} ${rainStatus.textColor} px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1`}>
                       <span>{rainStatus.icon}</span>
@@ -192,7 +202,6 @@ export default function CameraDetailPanel({
           <div className="p-4 border-t border-gray-200 bg-gray-50">
             <button
               onClick={() => {
-                // Navigate to map location
                 onClose();
               }}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
@@ -205,4 +214,3 @@ export default function CameraDetailPanel({
     </>
   );
 }
-

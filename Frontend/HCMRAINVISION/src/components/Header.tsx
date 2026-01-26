@@ -1,9 +1,15 @@
+/**
+ * Header Component
+ * Top navigation bar with search, filters, and statistics
+ */
+
 import { useState } from 'react';
+import type { RainFilter } from '../types';
 
 interface HeaderProps {
   onSearchChange: (search: string) => void;
   onDistrictFilterChange: (district: string) => void;
-  onRainFilterChange: (rainFilter: 'all' | 'rain' | 'no-rain') => void;
+  onRainFilterChange: (rainFilter: RainFilter) => void;
   districts: string[];
   totalCameras: number;
   camerasWithRain: number;
@@ -19,7 +25,7 @@ export default function Header({
 }: HeaderProps) {
   const [search, setSearch] = useState('');
   const [districtFilter, setDistrictFilter] = useState('all');
-  const [rainFilter, setRainFilter] = useState<'all' | 'rain' | 'no-rain'>('all');
+  const [rainFilter, setRainFilter] = useState<RainFilter>('all');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,7 +41,7 @@ export default function Header({
   };
 
   const handleRainFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as 'all' | 'rain' | 'no-rain';
+    const value = e.target.value as RainFilter;
     setRainFilter(value);
     onRainFilterChange(value);
   };
@@ -54,7 +60,7 @@ export default function Header({
                 Live micro-weather rain visualization across Ho Chi Minh City
               </p>
             </div>
-            
+
             {/* Stats */}
             <div className="hidden lg:flex items-center gap-4 ml-4">
               <div className="text-right">
@@ -151,4 +157,3 @@ export default function Header({
     </header>
   );
 }
-

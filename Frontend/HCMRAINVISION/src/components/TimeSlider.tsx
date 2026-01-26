@@ -1,3 +1,8 @@
+/**
+ * TimeSlider Component
+ * Time range slider for navigating through historical rain data
+ */
+
 interface TimeSliderProps {
   currentTimestamp: string;
   timestamps: string[];

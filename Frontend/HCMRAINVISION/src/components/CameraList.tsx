@@ -1,6 +1,11 @@
+/**
+ * CameraList Component
+ * Sidebar displaying list of cameras with filtering and selection
+ */
+
 import { useMemo } from 'react';
-import type { CameraInfo } from '../data/mockRainData';
-import type { RainDataPoint } from '../data/mockRainData';
+import type { CameraInfo, RainDataPoint, RainFilter } from '../types';
+import { RAIN_LEVEL_CONFIG } from '../constants';
 
 interface CameraListProps {
   cameras: CameraInfo[];
@@ -9,10 +14,38 @@ interface CameraListProps {
   onCameraSelect: (cameraId: string) => void;
   searchQuery: string;
   districtFilter: string;
-  rainFilter: 'all' | 'rain' | 'no-rain';
+  rainFilter: RainFilter;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
+
+/**
+ * Get rain status information for a camera
+ */
+const getRainStatus = (rainLevel: number) => {
+  if (rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN) {
+    return {
+      level: RAIN_LEVEL_CONFIG.NO_RAIN,
+      label: 'No Rain',
+      color: 'bg-gray-200',
+      textColor: 'text-gray-700',
+    };
+  }
+  if (rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN) {
+    return {
+      level: RAIN_LEVEL_CONFIG.LIGHT_RAIN,
+      label: 'Light Rain',
+      color: 'bg-yellow-400',
+      textColor: 'text-yellow-900',
+    };
+  }
+  return {
+    level: RAIN_LEVEL_CONFIG.HEAVY_RAIN,
+    label: 'Heavy Rain',
+    color: 'bg-red-500',
+    textColor: 'text-white',
+  };
+};
 
 export default function CameraList({
   cameras,
@@ -25,7 +58,7 @@ export default function CameraList({
   isCollapsed,
   onToggleCollapse,
 }: CameraListProps) {
-  // Create a map of camera ID to rain level
+  // Create a map of camera ID to rain level for efficient lookup
   const rainDataMap = useMemo(() => {
     const map = new Map<string, RainDataPoint>();
     rainData.forEach((point) => {
@@ -34,7 +67,7 @@ export default function CameraList({
     return map;
   }, [rainData]);
 
-  // Filter cameras
+  // Filter cameras based on search, district, and rain status
   const filteredCameras = useMemo(() => {
     return cameras.filter((camera) => {
       // Search filter
@@ -56,7 +89,7 @@ export default function CameraList({
       // Rain filter
       if (rainFilter !== 'all') {
         const rainPoint = rainDataMap.get(camera.id);
-        const hasRain = rainPoint?.rainLevel && rainPoint.rainLevel > 0;
+        const hasRain = rainPoint?.rainLevel && rainPoint.rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN;
         if (rainFilter === 'rain' && !hasRain) return false;
         if (rainFilter === 'no-rain' && hasRain) return false;
       }
@@ -65,17 +98,7 @@ export default function CameraList({
     });
   }, [cameras, searchQuery, districtFilter, rainFilter, rainDataMap]);
 
-  const getRainStatus = (cameraId: string) => {
-    const rainPoint = rainDataMap.get(cameraId);
-    if (!rainPoint || rainPoint.rainLevel === 0) {
-      return { level: 0, label: 'No Rain', color: 'bg-gray-200', textColor: 'text-gray-700' };
-    }
-    if (rainPoint.rainLevel === 1) {
-      return { level: 1, label: 'Light Rain', color: 'bg-yellow-400', textColor: 'text-yellow-900' };
-    }
-    return { level: 2, label: 'Heavy Rain', color: 'bg-red-500', textColor: 'text-white' };
-  };
-
+  // Collapsed state - show toggle button
   if (isCollapsed) {
     return (
       <button
@@ -121,7 +144,9 @@ export default function CameraList({
         ) : (
           <div className="divide-y divide-gray-100">
             {filteredCameras.map((camera) => {
-              const rainStatus = getRainStatus(camera.id);
+              const rainPoint = rainDataMap.get(camera.id);
+              const rainLevel = rainPoint?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
+              const rainStatus = getRainStatus(rainLevel);
               const isSelected = selectedCameraId === camera.id;
 
               return (
@@ -162,4 +187,3 @@ export default function CameraList({
     </div>
   );
 }
-

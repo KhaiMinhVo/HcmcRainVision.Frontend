@@ -1,3 +1,8 @@
+/**
+ * Home Page Component
+ * Main page component containing all UI elements and state management
+ */
+
 import { useState, useMemo } from 'react';
 import MapView from '../components/MapView';
 import TimeSlider from '../components/TimeSlider';
@@ -11,10 +16,12 @@ import {
   CAMERA_LOCATIONS,
   getAllDistricts,
   getCameraInfo,
-  type RainDataPoint,
 } from '../data/mockRainData';
+import type { RainDataPoint, RainFilter } from '../types';
+import { RAIN_LEVEL_CONFIG } from '../constants';
 
 export default function Home() {
+  // Generate static data once
   const timestamps = useMemo(() => generateTimestamps(), []);
   const allMockData = useMemo(() => generateAllMockData(), []);
   const districts = useMemo(() => getAllDistricts(), []);
@@ -26,11 +33,11 @@ export default function Home() {
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [districtFilter, setDistrictFilter] = useState('all');
-  const [rainFilter, setRainFilter] = useState<'all' | 'rain' | 'no-rain'>('all');
+  const [rainFilter, setRainFilter] = useState<RainFilter>('all');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
 
-  // Get current rain data
+  // Get current rain data for selected timestamp
   const currentRainData: RainDataPoint[] = useMemo(() => {
     return allMockData[currentTimestamp] || [];
   }, [currentTimestamp, allMockData]);
@@ -57,7 +64,7 @@ export default function Home() {
       // Rain filter
       if (rainFilter !== 'all') {
         const rainPoint = currentRainData.find((p) => p.id === camera.id);
-        const hasRain = rainPoint?.rainLevel && rainPoint.rainLevel > 0;
+        const hasRain = rainPoint?.rainLevel && rainPoint.rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN;
         if (rainFilter === 'rain' && !hasRain) return false;
         if (rainFilter === 'no-rain' && hasRain) return false;
       }
@@ -80,7 +87,7 @@ export default function Home() {
 
   // Count cameras with rain
   const camerasWithRain = useMemo(() => {
-    return currentRainData.filter((p) => p.rainLevel > 0).length;
+    return currentRainData.filter((p) => p.rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN).length;
   }, [currentRainData]);
 
   // Handle camera selection
@@ -92,8 +99,6 @@ export default function Home() {
   // Handle close detail panel
   const handleCloseDetailPanel = () => {
     setIsDetailPanelOpen(false);
-    // Optionally clear selection after a delay for better UX
-    // setTimeout(() => setSelectedCameraId(null), 300);
   };
 
   return (

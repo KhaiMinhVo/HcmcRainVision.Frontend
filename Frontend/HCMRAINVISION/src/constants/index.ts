@@ -1,0 +1,67 @@
+/**
+ * Application constants
+ */
+
+/**
+ * Ho Chi Minh City center coordinates
+ */
+export const HCMC_CENTER = {
+  lat: 10.8231,
+  lng: 106.6297,
+} as const;
+
+/**
+ * Map configuration
+ */
+export const MAP_CONFIG = {
+  DEFAULT_ZOOM: 12,
+  MIN_ZOOM_ON_SELECT: 14,
+} as const;
+
+/**
+ * Time configuration
+ */
+export const TIME_CONFIG = {
+  HOURS_BACK: 2,
+  INTERVAL_MINUTES: 5,
+  TOTAL_STEPS: 24, // 2 hours * 60 minutes / 5 minutes
+} as const;
+
+/**
+ * Camera configuration
+ */
+export const CAMERA_CONFIG = {
+  TOTAL_CAMERAS: 30,
+} as const;
+
+/**
+ * Rain level configuration
+ */
+export const RAIN_LEVEL_CONFIG = {
+  NO_RAIN: 0,
+  LIGHT_RAIN: 1,
+  HEAVY_RAIN: 2,
+  // Probability weights for random generation
+  NO_RAIN_PROBABILITY: 0.5,
+  LIGHT_RAIN_PROBABILITY: 0.3,
+  HEAVY_RAIN_PROBABILITY: 0.2,
+} as const;
+
+/**
+ * UI Configuration
+ */
+export const UI_CONFIG = {
+  SIDEBAR_WIDTH: {
+    MOBILE: 'w-80',
+    DESKTOP: 'w-80 lg:w-96',
+  },
+  Z_INDEX: {
+    MAP: 0,
+    OVERLAY: 30,
+    SIDEBAR: 40,
+    DETAIL_PANEL: 50,
+    HEADER: 50,
+    LEGEND: 1000,
+  },
+} as const;
+
