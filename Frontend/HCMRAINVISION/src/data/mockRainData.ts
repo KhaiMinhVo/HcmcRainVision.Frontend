@@ -75,7 +75,7 @@ export const CAMERA_LOCATIONS: CameraInfo[] = generateCameraLocations();
 export const generateTimestamps = (): string[] => {
   const timestamps: string[] = [];
   const now = new Date();
-  const { HOURS_BACK, INTERVAL_MINUTES, TOTAL_STEPS } = TIME_CONFIG;
+  const { INTERVAL_MINUTES, TOTAL_STEPS } = TIME_CONFIG;
   
   for (let i = TOTAL_STEPS; i >= 0; i--) {
     const time = new Date(now.getTime() - i * INTERVAL_MINUTES * 60 * 1000);

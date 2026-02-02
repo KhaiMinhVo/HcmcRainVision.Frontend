@@ -73,10 +73,10 @@ export default function Home() {
     });
   }, [searchQuery, districtFilter, rainFilter, currentRainData]);
 
-  // Get selected camera info
+  // Get selected camera info (normalize undefined to null for props)
   const selectedCamera = useMemo(() => {
     if (!selectedCameraId) return null;
-    return getCameraInfo(selectedCameraId);
+    return getCameraInfo(selectedCameraId) ?? null;
   }, [selectedCameraId]);
 
   // Get selected camera rain data

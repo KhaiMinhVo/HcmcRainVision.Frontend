@@ -18,11 +18,12 @@ interface MapViewProps {
 }
 
 /**
- * Fix for default marker icons in React-Leaflet
- * This runs once on module load to fix icon paths
+ * Fix for default marker icons in React-Leaflet (icon paths broken in bundlers).
+ * Runs once on module load. _getIconUrl is optional in Leaflet types.
  */
 if (typeof window !== 'undefined') {
-  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  const iconProto = L.Icon.Default.prototype as unknown as { _getIconUrl?: string };
+  delete iconProto._getIconUrl;
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
     iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -163,17 +164,17 @@ function MapUpdater({
       marker.bindPopup(popup);
 
       // Hover effects
-      marker.on('mouseover', function () {
-        this.setStyle({
+      marker.on('mouseover', () => {
+        marker.setStyle({
           weight: 4,
           fillOpacity: 0.9,
         });
         marker.openPopup();
       });
 
-      marker.on('mouseout', function () {
+      marker.on('mouseout', () => {
         if (!isSelected) {
-          this.setStyle({
+          marker.setStyle({
             weight: 2,
             fillOpacity: 0.7,
           });
