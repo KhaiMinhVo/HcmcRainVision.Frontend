@@ -28,16 +28,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: Frontend/HCMRAINVISION/package-lock.json
 
       - name: Install dependencies
         run: npm install
+        working-directory: Frontend/HCMRAINVISION
 
       - name: Build
-        env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
         run: npm run build
-        # Repository name: HcmcRainVision.Frontend
-        # Base path will be automatically set in vite.config.ts
+        working-directory: Frontend/HCMRAINVISION
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -45,7 +44,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: Frontend/HCMRAINVISION/dist
 
   deploy:
     environment:
@@ -57,4 +56,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
