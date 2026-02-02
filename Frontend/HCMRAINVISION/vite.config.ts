@@ -22,7 +22,7 @@ const getBasePath = (): string => {
   
   // For local development, use repo name as base path
   // This ensures consistency between dev and production
-  return `/${REPO_NAME}/`
+  return `/${REPO_NAME}/`  
 }
 
 // https://vite.dev/config/
