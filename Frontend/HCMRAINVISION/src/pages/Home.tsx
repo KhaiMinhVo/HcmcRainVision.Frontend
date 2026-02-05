@@ -10,6 +10,8 @@ import Legend from '../components/Legend';
 import Header from '../components/Header';
 import CameraList from '../components/CameraList';
 import CameraDetailPanel from '../components/CameraDetailPanel';
+import FavoritesSection from '../components/FavoritesSection';
+import { useAuth } from '../contexts/AuthContext';
 import {
   generateAllMockData,
   generateTimestamps,
@@ -90,6 +92,8 @@ export default function Home() {
     return currentRainData.filter((p) => p.rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN).length;
   }, [currentRainData]);
 
+  const { isAuthenticated } = useAuth();
+
   // Handle camera selection
   const handleCameraSelect = (cameraId: string) => {
     setSelectedCameraId(cameraId);
@@ -116,9 +120,13 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 flex overflow-hidden">
         {/* Sidebar - Camera List */}
-        <div className={`hidden sm:block transition-all duration-300 ${
+        <div className={`hidden sm:flex sm:flex-col transition-all duration-300 ${
           isSidebarCollapsed ? 'w-0' : 'w-80 lg:w-96'
         }`}>
+          {isAuthenticated && !isSidebarCollapsed && (
+            <FavoritesSection onCameraSelect={handleCameraSelect} />
+          )}
+          <div className="flex-1 min-h-0 flex flex-col">
           <CameraList
             cameras={filteredCameras}
             rainData={currentRainData}
@@ -130,6 +138,7 @@ export default function Home() {
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
+          </div>
         </div>
 
         {/* Map Section */}
@@ -179,7 +188,16 @@ export default function Home() {
             className="fixed inset-0 bg-black bg-opacity-50 z-30 sm:hidden"
             onClick={() => setIsSidebarCollapsed(true)}
           />
-          <div className="fixed inset-y-0 left-0 w-80 bg-white z-40 sm:hidden shadow-2xl">
+          <div className="fixed inset-y-0 left-0 w-80 bg-white z-40 sm:hidden shadow-2xl flex flex-col">
+            {isAuthenticated && (
+              <FavoritesSection
+                onCameraSelect={(id) => {
+                  handleCameraSelect(id);
+                  setIsSidebarCollapsed(true);
+                }}
+              />
+            )}
+            <div className="flex-1 min-h-0">
             <CameraList
               cameras={filteredCameras}
               rainData={currentRainData}
@@ -194,6 +212,7 @@ export default function Home() {
               isCollapsed={false}
               onToggleCollapse={() => setIsSidebarCollapsed(true)}
             />
+            </div>
           </div>
         </>
       )}

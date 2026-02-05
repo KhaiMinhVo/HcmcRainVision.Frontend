@@ -1,10 +1,11 @@
 /**
  * MapView Component
- * Displays an interactive map with camera markers and rain data visualization
+ * Displays an interactive map with camera markers and rain data visualization.
+ * Uses imperative Leaflet API (ref + useEffect) to avoid "Map container is
+ * already initialized" when React Strict Mode or routing causes remount.
  */
 
 import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RainDataPoint, CameraInfo } from '../types';
@@ -18,8 +19,7 @@ interface MapViewProps {
 }
 
 /**
- * Fix for default marker icons in React-Leaflet (icon paths broken in bundlers).
- * Runs once on module load. _getIconUrl is optional in Leaflet types.
+ * Fix for default marker icons (icon paths broken in bundlers).
  */
 if (typeof window !== 'undefined') {
   const iconProto = L.Icon.Default.prototype as unknown as { _getIconUrl?: string };
@@ -31,218 +31,177 @@ if (typeof window !== 'undefined') {
   });
 }
 
-/**
- * MapUpdater Component
- * Handles map marker updates when data changes
- */
-function MapUpdater({
-  rainData,
-  cameras,
-  selectedCameraId,
-  onCameraClick,
-}: {
-  rainData: RainDataPoint[];
-  cameras: CameraInfo[];
-  selectedCameraId: string | null;
-  onCameraClick: (cameraId: string) => void;
-}) {
-  const map = useMap();
-  const markersRef = useRef<Map<string, L.CircleMarker>>(new Map());
-  const popupsRef = useRef<Map<string, L.Popup>>(new Map());
+const MARKER_COLORS = {
+  [RAIN_LEVEL_CONFIG.NO_RAIN]: '#9ca3af',
+  [RAIN_LEVEL_CONFIG.LIGHT_RAIN]: '#eab308',
+  [RAIN_LEVEL_CONFIG.HEAVY_RAIN]: '#ef4444',
+  SELECTED: '#3b82f6',
+} as const;
 
-  useEffect(() => {
-    // Clear existing markers
-    markersRef.current.forEach((marker) => {
-      map.removeLayer(marker);
+const MARKER_RADIUS = {
+  [RAIN_LEVEL_CONFIG.NO_RAIN]: 6,
+  [RAIN_LEVEL_CONFIG.LIGHT_RAIN]: 10,
+  [RAIN_LEVEL_CONFIG.HEAVY_RAIN]: 14,
+} as const;
+
+function addMarkers(
+  map: L.Map,
+  rainData: RainDataPoint[],
+  cameras: CameraInfo[],
+  selectedCameraId: string | null,
+  onCameraClick: (cameraId: string) => void
+): Map<string, L.CircleMarker> {
+  const markers = new Map<string, L.CircleMarker>();
+  const rainDataMap = new Map<string, RainDataPoint>();
+  rainData.forEach((p) => rainDataMap.set(p.id, p));
+  const cameraMap = new Map<string, CameraInfo>();
+  cameras.forEach((c) => cameraMap.set(c.id, c));
+
+  cameras.forEach((camera) => {
+    const rainPoint = rainDataMap.get(camera.id);
+    const rainLevel = rainPoint?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
+    const isSelected = selectedCameraId === camera.id;
+    const color = MARKER_COLORS[rainLevel];
+    const radius = MARKER_RADIUS[rainLevel];
+
+    const marker = L.circleMarker([camera.lat, camera.lng], {
+      radius,
+      fillColor: color,
+      color: isSelected ? MARKER_COLORS.SELECTED : color,
+      weight: isSelected ? 4 : 2,
+      opacity: 0.9,
+      fillOpacity: 0.7,
+      className: 'cursor-pointer transition-all',
     });
-    popupsRef.current.forEach((popup) => {
-      map.removeLayer(popup);
-    });
-    markersRef.current.clear();
-    popupsRef.current.clear();
 
-    // Create maps for efficient lookup
-    const rainDataMap = new Map<string, RainDataPoint>();
-    rainData.forEach((point) => {
-      rainDataMap.set(point.id, point);
+    marker.on('click', () => {
+      onCameraClick(camera.id);
+      map.setView(
+        [camera.lat, camera.lng],
+        Math.max(map.getZoom(), MAP_CONFIG.MIN_ZOOM_ON_SELECT),
+        { animate: true }
+      );
     });
 
-    const cameraMap = new Map<string, CameraInfo>();
-    cameras.forEach((camera) => {
-      cameraMap.set(camera.id, camera);
-    });
+    const rainStatusClass =
+      rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN
+        ? 'bg-gray-200 text-gray-700'
+        : rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN
+        ? 'bg-yellow-400 text-yellow-900'
+        : 'bg-red-500 text-white';
+    const rainStatusText =
+      rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN
+        ? 'No Rain'
+        : rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN
+        ? 'Light Rain'
+        : 'Heavy Rain';
 
-    // Marker color configuration
-    const MARKER_COLORS = {
-      [RAIN_LEVEL_CONFIG.NO_RAIN]: '#9ca3af',
-      [RAIN_LEVEL_CONFIG.LIGHT_RAIN]: '#eab308',
-      [RAIN_LEVEL_CONFIG.HEAVY_RAIN]: '#ef4444',
-      SELECTED: '#3b82f6',
-    } as const;
-
-    const MARKER_RADIUS = {
-      [RAIN_LEVEL_CONFIG.NO_RAIN]: 6,
-      [RAIN_LEVEL_CONFIG.LIGHT_RAIN]: 10,
-      [RAIN_LEVEL_CONFIG.HEAVY_RAIN]: 14,
-    } as const;
-
-    // Add markers for all cameras
-    cameras.forEach((camera) => {
-      const rainPoint = rainDataMap.get(camera.id);
-      const rainLevel = rainPoint?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
-      const isSelected = selectedCameraId === camera.id;
-
-      const color = MARKER_COLORS[rainLevel];
-      const radius = MARKER_RADIUS[rainLevel];
-
-      const marker = L.circleMarker([camera.lat, camera.lng], {
-        radius,
-        fillColor: color,
-        color: isSelected ? MARKER_COLORS.SELECTED : color,
-        weight: isSelected ? 4 : 2,
-        opacity: 0.9,
-        fillOpacity: 0.7,
-        className: 'cursor-pointer transition-all',
-      });
-
-      // Click handler
-      marker.on('click', () => {
+    const popupContent = document.createElement('div');
+    popupContent.className = 'p-2';
+    popupContent.innerHTML = `
+      <h3 class="font-semibold text-sm mb-1">${camera.name}</h3>
+      <p class="text-xs text-gray-600 mb-2">${camera.ward}, ${camera.district}</p>
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded text-xs ${rainStatusClass}">${rainStatusText}</span>
+      </div>
+      <button class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium view-details-btn">View Details →</button>
+    `;
+    const viewDetailsBtn = popupContent.querySelector('.view-details-btn');
+    if (viewDetailsBtn) {
+      viewDetailsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         onCameraClick(camera.id);
-        map.setView(
-          [camera.lat, camera.lng],
-          Math.max(map.getZoom(), MAP_CONFIG.MIN_ZOOM_ON_SELECT),
-          { animate: true }
-        );
+        map.closePopup();
       });
-
-      // Create popup content
-      const popupContent = document.createElement('div');
-      popupContent.className = 'p-2';
-      
-      const rainStatusClass =
-        rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN
-          ? 'bg-gray-200 text-gray-700'
-          : rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN
-          ? 'bg-yellow-400 text-yellow-900'
-          : 'bg-red-500 text-white';
-
-      const rainStatusText =
-        rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN
-          ? 'No Rain'
-          : rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN
-          ? 'Light Rain'
-          : 'Heavy Rain';
-
-      popupContent.innerHTML = `
-        <h3 class="font-semibold text-sm mb-1">${camera.name}</h3>
-        <p class="text-xs text-gray-600 mb-2">${camera.ward}, ${camera.district}</p>
-        <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 rounded text-xs ${rainStatusClass}">
-            ${rainStatusText}
-          </span>
-        </div>
-        <button class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium view-details-btn">
-          View Details →
-        </button>
-      `;
-
-      // Add click handler to popup button
-      const viewDetailsBtn = popupContent.querySelector('.view-details-btn');
-      if (viewDetailsBtn) {
-        viewDetailsBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onCameraClick(camera.id);
-          map.closePopup();
-        });
-      }
-
-      const popup = L.popup({
-        className: 'custom-popup',
-        maxWidth: 250,
-      }).setContent(popupContent);
-
-      marker.bindPopup(popup);
-
-      // Hover effects
-      marker.on('mouseover', () => {
-        marker.setStyle({
-          weight: 4,
-          fillOpacity: 0.9,
-        });
-        marker.openPopup();
-      });
-
-      marker.on('mouseout', () => {
-        if (!isSelected) {
-          marker.setStyle({
-            weight: 2,
-            fillOpacity: 0.7,
-          });
-        }
-      });
-
-      marker.addTo(map);
-      markersRef.current.set(camera.id, marker);
-      popupsRef.current.set(camera.id, popup);
-    });
-
-    // Zoom to selected camera
-    if (selectedCameraId) {
-      const selectedCamera = cameraMap.get(selectedCameraId);
-      if (selectedCamera) {
-        map.setView(
-          [selectedCamera.lat, selectedCamera.lng],
-          Math.max(map.getZoom(), MAP_CONFIG.MIN_ZOOM_ON_SELECT),
-          { animate: true }
-        );
-      }
     }
 
-    return () => {
-      markersRef.current.forEach((marker) => {
-        map.removeLayer(marker);
-      });
-      popupsRef.current.forEach((popup) => {
-        map.removeLayer(popup);
-      });
-    };
-  }, [rainData, cameras, selectedCameraId, map, onCameraClick]);
+    const popup = L.popup({ className: 'custom-popup', maxWidth: 250 }).setContent(popupContent);
+    marker.bindPopup(popup);
 
-  return null;
+    marker.on('mouseover', () => {
+      marker.setStyle({ weight: 4, fillOpacity: 0.9 });
+      marker.openPopup();
+    });
+    marker.on('mouseout', () => {
+      if (selectedCameraId !== camera.id) {
+        marker.setStyle({ weight: 2, fillOpacity: 0.7 });
+      }
+    });
+
+    marker.addTo(map);
+    markers.set(camera.id, marker);
+  });
+
+  if (selectedCameraId) {
+    const selected = cameraMap.get(selectedCameraId);
+    if (selected) {
+      map.setView(
+        [selected.lat, selected.lng],
+        Math.max(map.getZoom(), MAP_CONFIG.MIN_ZOOM_ON_SELECT),
+        { animate: true }
+      );
+    }
+  }
+
+  return markers;
 }
 
-/**
- * MapView Component
- * Main map component displaying HCMC with camera markers
- */
 export default function MapView({
   rainData,
   cameras,
   selectedCameraId,
   onCameraClick,
 }: MapViewProps) {
-  const hcmcCenter: [number, number] = [HCMC_CENTER.lat, HCMC_CENTER.lng];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+
+  // Create map once on mount; cleanup on unmount
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Guard: Leaflet leaves _leaflet_id on the container; if it exists, container was already used
+    if ((container as unknown as { _leaflet_id?: number })._leaflet_id != null) {
+      return;
+    }
+
+    const map = L.map(container, {
+      center: [HCMC_CENTER.lat, HCMC_CENTER.lng],
+      zoom: MAP_CONFIG.DEFAULT_ZOOM,
+      scrollWheelZoom: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Update markers when data or selection changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const markersRef = new Map<string, L.CircleMarker>();
+    const markers = addMarkers(map, rainData, cameras, selectedCameraId, onCameraClick);
+    markers.forEach((m, id) => markersRef.set(id, m));
+
+    return () => {
+      markersRef.forEach((marker) => map.removeLayer(marker));
+    };
+  }, [rainData, cameras, selectedCameraId, onCameraClick]);
 
   return (
-    <div className="w-full h-full relative">
-      <MapContainer
-        center={hcmcCenter}
-        zoom={MAP_CONFIG.DEFAULT_ZOOM}
-        style={{ height: '100%', width: '100%' }}
-        scrollWheelZoom={true}
-        className="z-0"
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <MapUpdater
-          rainData={rainData}
-          cameras={cameras}
-          selectedCameraId={selectedCameraId}
-          onCameraClick={onCameraClick}
-        />
-      </MapContainer>
-    </div>
+    <div
+      ref={containerRef}
+      className="w-full h-full relative z-0"
+      style={{ minHeight: 300 }}
+    />
   );
 }

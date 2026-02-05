@@ -6,6 +6,8 @@
 import { useEffect } from 'react';
 import type { CameraInfo, RainDataPoint } from '../types';
 import { RAIN_LEVEL_CONFIG } from '../constants';
+import { useAuth } from '../contexts/AuthContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 
 interface CameraDetailPanelProps {
   camera: CameraInfo | null;
@@ -63,10 +65,14 @@ export default function CameraDetailPanel({
     };
   }, [isOpen]);
 
+  const { isAuthenticated } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+
   if (!camera || !isOpen) return null;
 
   const rainLevel = rainData?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
   const rainStatus = getRainStatus(rainLevel);
+  const favorited = isAuthenticated && isFavorite(camera.id);
   const lastUpdate = rainData?.timestamp
     ? new Date(rainData.timestamp).toLocaleString('vi-VN')
     : 'N/A';
@@ -92,15 +98,34 @@ export default function CameraDetailPanel({
               <h2 className="text-lg font-semibold text-gray-900 truncate">{camera.name}</h2>
               <p className="text-xs text-gray-600 mt-1 truncate">{camera.district}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="ml-4 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors flex-shrink-0"
-              aria-label="Close"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(camera.id)}
+                  className="p-2 rounded-md text-gray-600 hover:text-red-500 transition-colors"
+                  aria-label={favorited ? 'Bỏ yêu thích' : 'Yêu thích'}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill={favorited ? 'currentColor' : 'none'}
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors"
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Content */}

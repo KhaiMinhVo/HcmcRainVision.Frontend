@@ -6,6 +6,8 @@
 import { useMemo } from 'react';
 import type { CameraInfo, RainDataPoint, RainFilter } from '../types';
 import { RAIN_LEVEL_CONFIG } from '../constants';
+import { useAuth } from '../contexts/AuthContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 
 interface CameraListProps {
   cameras: CameraInfo[];
@@ -58,6 +60,9 @@ export default function CameraList({
   isCollapsed,
   onToggleCollapse,
 }: CameraListProps) {
+  const { isAuthenticated } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+
   // Create a map of camera ID to rain level for efficient lookup
   const rainDataMap = useMemo(() => {
     const map = new Map<string, RainDataPoint>();
@@ -149,36 +154,63 @@ export default function CameraList({
               const rainStatus = getRainStatus(rainLevel);
               const isSelected = selectedCameraId === camera.id;
 
+              const favorited = isAuthenticated && isFavorite(camera.id);
+
               return (
-                <button
+                <div
                   key={camera.id}
-                  onClick={() => onCameraSelect(camera.id)}
-                  className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                  className={`relative w-full p-4 pr-10 text-left hover:bg-gray-50 transition-colors ${
                     isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium text-gray-900 truncate">{camera.name}</h3>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${rainStatus.color} ${rainStatus.textColor} flex-shrink-0`}
-                        >
-                          {rainStatus.label}
-                        </span>
+                  <button
+                    type="button"
+                    onClick={() => onCameraSelect(camera.id)}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium text-gray-900 truncate">{camera.name}</h3>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${rainStatus.color} ${rainStatus.textColor} flex-shrink-0`}
+                          >
+                            {rainStatus.label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 truncate">{camera.address}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {camera.ward}, {camera.district}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-600 truncate">{camera.address}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {camera.ward}, {camera.district}
-                      </p>
+                      {isSelected && (
+                        <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      )}
                     </div>
-                    {isSelected && (
-                      <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </button>
+                  {isAuthenticated && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(camera.id);
+                      }}
+                      className="absolute top-4 right-4 p-1 rounded text-gray-400 hover:text-red-500"
+                      aria-label={favorited ? 'Bỏ yêu thích' : 'Yêu thích'}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill={favorited ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
-                    )}
-                  </div>
-                </button>
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>

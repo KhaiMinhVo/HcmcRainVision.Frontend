@@ -65,3 +65,14 @@ export const UI_CONFIG = {
   },
 } as const;
 
+/**
+ * LocalStorage keys for persistence
+ */
+export const STORAGE_KEYS = {
+  USER: 'hcm_rain_user',
+  REMEMBER_ME: 'hcm_rain_remember_me',
+  FAVORITES: 'hcm_rain_favorites',
+  NOTIFICATIONS: 'hcm_rain_notifications',
+  NOTIFICATION_SETTINGS: 'hcm_rain_notification_settings',
+} as const;
+

@@ -39,3 +39,35 @@ export interface CameraInfo {
  */
 export type RainFilter = 'all' | 'rain' | 'no-rain';
 
+/**
+ * User (mock auth)
+ */
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+}
+
+/**
+ * Single notification item
+ */
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  type: 'rain' | 'heavy_rain';
+  ward?: string;
+}
+
+/**
+ * Notification subscription settings
+ */
+export interface NotificationSettings {
+  wardIds: string[]; // ward names (e.g. "Phường 1")
+  alertOnRain: boolean;
+  alertOnHeavyRain: boolean;
+}
+

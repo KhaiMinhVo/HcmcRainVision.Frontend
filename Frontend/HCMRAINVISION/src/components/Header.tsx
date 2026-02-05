@@ -1,10 +1,13 @@
 /**
  * Header Component
- * Top navigation bar with search, filters, and statistics
+ * Top navigation: title, filters, stats; when logged in: greeting + notification bell
  */
 
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import type { RainFilter } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 interface HeaderProps {
   onSearchChange: (search: string) => void;
@@ -27,6 +30,8 @@ export default function Header({
   const [districtFilter, setDistrictFilter] = useState('all');
   const [rainFilter, setRainFilter] = useState<RainFilter>('all');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
+  const location = useLocation();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -49,7 +54,6 @@ export default function Header({
   return (
     <header className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-full mx-auto">
-        {/* Top Section - Title and Stats */}
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
@@ -73,10 +77,45 @@ export default function Header({
               </div>
             </div>
 
+            {/* Auth: greeting + bell or Login/Signup */}
+            <div className="flex items-center gap-2 ml-4">
+              {isAuthenticated && user ? (
+                <>
+                  <span className="hidden sm:inline text-sm text-gray-700">
+                    Xin chào, <span className="font-medium text-gray-900">{user.name}</span>
+                  </span>
+                  <NotificationDropdown />
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    Thoát
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    state={{ from: { pathname: location.pathname } }}
+                    className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    Đăng nhập
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Đăng ký
+                  </Link>
+                </>
+              )}
+            </div>
+
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden ml-4 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              className="lg:hidden ml-2 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               aria-label="Toggle menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +132,6 @@ export default function Header({
         {/* Filters Section */}
         <div className={`px-4 sm:px-6 lg:px-8 pb-4 border-t border-gray-100 ${isMobileMenuOpen ? 'block' : 'hidden lg:block'}`}>
           <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search Bar */}
             <div className="flex-1">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -110,8 +148,6 @@ export default function Header({
                 />
               </div>
             </div>
-
-            {/* District Filter */}
             <div className="sm:w-48">
               <select
                 value={districtFilter}
@@ -126,8 +162,6 @@ export default function Header({
                 ))}
               </select>
             </div>
-
-            {/* Rain Status Filter */}
             <div className="sm:w-40">
               <select
                 value={rainFilter}
@@ -141,7 +175,6 @@ export default function Header({
             </div>
           </div>
 
-          {/* Mobile Stats */}
           <div className="lg:hidden flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
             <div className="text-sm">
               <span className="text-gray-600">Total: </span>
