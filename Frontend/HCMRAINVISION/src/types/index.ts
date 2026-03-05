@@ -30,6 +30,8 @@ export interface CameraInfo {
   address: string;
   ward: string;
   district: string;
+  /** Ward ID for API (e.g. GET /api/location/wards/{id}) */
+  wardId?: string;
   lat: number;
   lng: number;
 }
@@ -40,13 +42,17 @@ export interface CameraInfo {
 export type RainFilter = 'all' | 'rain' | 'no-rain';
 
 /**
- * User (mock auth)
+ * User (from API auth/me or login)
  */
 export interface User {
-  id: string;
+  id: number | string;
+  username: string;
   email: string;
-  name: string;
+  name: string; // display name: FullName ?? Username
+  role?: string;
   avatar?: string;
+  fullName?: string | null;
+  phoneNumber?: string | null;
 }
 
 /**

@@ -19,6 +19,15 @@ export const MAP_CONFIG = {
 } as const;
 
 /**
+ * Heatmap layer options (leaflet-heat)
+ */
+export const HEATMAP_CONFIG = {
+  RADIUS: 25,
+  BLUR: 15,
+  MAX: 1,
+} as const;
+
+/**
  * Time configuration
  */
 export const TIME_CONFIG = {
@@ -70,9 +79,13 @@ export const UI_CONFIG = {
  */
 export const STORAGE_KEYS = {
   USER: 'hcm_rain_user',
+  TOKEN: 'hcm_rain_token',
   REMEMBER_ME: 'hcm_rain_remember_me',
   FAVORITES: 'hcm_rain_favorites',
   NOTIFICATIONS: 'hcm_rain_notifications',
   NOTIFICATION_SETTINGS: 'hcm_rain_notification_settings',
 } as const;
+
+/** Default request timeout in ms */
+export const API_TIMEOUT_MS = 15_000;
 

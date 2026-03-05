@@ -1,13 +1,9 @@
 /**
- * NotificationSettingsModal – đăng ký nhận thông báo theo khu vực (phường)
- * Multi-select wards, gợi ý từ khu vực yêu thích, cảnh báo khi có mưa / mưa nặng
+ * NotificationSettingsModal – đăng ký nhận thông báo theo phường (API: /api/subscriptions, /api/location/wards)
  */
-
 import { useEffect, useState } from 'react';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useFavorites } from '../contexts/FavoritesContext';
-import { getAllWards } from '../data/mockRainData';
-import { getCameraInfo } from '../data/mockRainData';
 
 interface NotificationSettingsModalProps {
   isOpen: boolean;
@@ -18,48 +14,82 @@ export default function NotificationSettingsModal({
   isOpen,
   onClose,
 }: NotificationSettingsModalProps) {
-  const { settings, updateSettings, suggestedWards, setSuggestedWards } = useNotifications();
-  const { favoriteIds } = useFavorites();
-  const [wardIds, setWardIds] = useState<string[]>(settings.wardIds);
-  const [alertOnRain, setAlertOnRain] = useState(settings.alertOnRain);
-  const [alertOnHeavyRain, setAlertOnHeavyRain] = useState(settings.alertOnHeavyRain);
+  const {
+    subscriptions,
+    wards,
+    addSubscription,
+    removeSubscription,
+    updateSubscription,
+    refetchSubscriptions,
+    suggestedWards,
+    setSuggestedWards,
+    loadingSubscriptions,
+  } = useNotifications();
+  const { favoriteCameras } = useFavorites();
 
-  const allWards = getAllWards();
+  const subscribedWardIds = subscriptions.map((s) => s.WardId);
+  const [selectedWardIds, setSelectedWardIds] = useState<string[]>(subscribedWardIds);
+  const [alertOnRain, setAlertOnRain] = useState(true);
+  const [alertOnHeavyRain, setAlertOnHeavyRain] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Gợi ý phường từ cameras yêu thích
   useEffect(() => {
-    const wards = new Set<string>();
-    favoriteIds.forEach((id) => {
-      const cam = getCameraInfo(id);
-      if (cam) wards.add(cam.ward);
+    const wardNames = new Set<string>();
+    favoriteCameras.forEach((c) => {
+      if (c.ward) wardNames.add(c.ward);
     });
-    setSuggestedWards([...wards].sort());
-  }, [favoriteIds, setSuggestedWards]);
+    setSuggestedWards([...wardNames].sort());
+  }, [favoriteCameras, setSuggestedWards]);
 
   useEffect(() => {
     if (isOpen) {
-      setWardIds(settings.wardIds);
-      setAlertOnRain(settings.alertOnRain);
-      setAlertOnHeavyRain(settings.alertOnHeavyRain);
+      setSelectedWardIds(subscribedWardIds);
+      setAlertOnRain(subscriptions.some((s) => s.IsEnabled) ?? true);
+      setAlertOnHeavyRain(subscriptions.some((s) => s.IsEnabled) ?? true);
+      setError(null);
     }
-  }, [isOpen, settings.wardIds, settings.alertOnRain, settings.alertOnHeavyRain]);
+  }, [isOpen, subscribedWardIds, subscriptions]);
 
-  if (!isOpen) return null;
-
-  const toggleWard = (ward: string) => {
-    setWardIds((prev) =>
-      prev.includes(ward) ? prev.filter((w) => w !== ward) : [...prev, ward]
+  const toggleWard = (wardId: string) => {
+    setSelectedWardIds((prev) =>
+      prev.includes(wardId) ? prev.filter((id) => id !== wardId) : [...prev, wardId]
     );
   };
 
-  const handleSave = () => {
-    updateSettings({
-      wardIds,
-      alertOnRain,
-      alertOnHeavyRain,
-    });
-    onClose();
+  const handleSave = async () => {
+    setError(null);
+    setSaving(true);
+    try {
+      const toAdd = selectedWardIds.filter((id) => !subscribedWardIds.includes(id));
+      const toRemove = subscriptions.filter((s) => !selectedWardIds.includes(s.WardId));
+      for (const sub of toRemove) {
+        await removeSubscription(sub.SubscriptionId);
+      }
+      for (const wardId of toAdd) {
+        await addSubscription(wardId, 0.7);
+      }
+      const isEnabled = alertOnRain || alertOnHeavyRain;
+      const toUpdate = subscriptions.filter(
+        (s) => selectedWardIds.includes(s.WardId) && s.IsEnabled !== isEnabled
+      );
+      for (const sub of toUpdate) {
+        await updateSubscription(sub.SubscriptionId, {
+          IsEnabled: isEnabled,
+          ThresholdProbability: sub.ThresholdProbability,
+        });
+      }
+      await refetchSubscriptions();
+      onClose();
+    } catch (e) {
+      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Lưu thất bại.';
+      setError(msg);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (!isOpen) return null;
 
   return (
     <>
@@ -89,74 +119,86 @@ export default function NotificationSettingsModal({
           </div>
 
           <div className="p-4 overflow-y-auto space-y-4">
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">
-                Chọn khu vực (phường) muốn nhận cảnh báo
-              </p>
-              {suggestedWards.length > 0 && (
-                <p className="text-xs text-gray-500 mb-2">
-                  Gợi ý từ khu vực yêu thích của bạn:
-                </p>
-              )}
-              {suggestedWards.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {suggestedWards.map((ward) => (
-                    <button
-                      key={ward}
-                      type="button"
-                      onClick={() => toggleWard(ward)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                        wardIds.includes(ward)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {ward}
-                    </button>
-                  ))}
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>
+            )}
+            {loadingSubscriptions ? (
+              <p className="text-sm text-gray-500">Đang tải...</p>
+            ) : (
+              <>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Chọn khu vực (phường) muốn nhận cảnh báo
+                  </p>
+                  {suggestedWards.length > 0 && (
+                    <p className="text-xs text-gray-500 mb-2">Gợi ý từ khu vực yêu thích:</p>
+                  )}
+                  {suggestedWards.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {wards
+                        .filter((w) => suggestedWards.includes(w.WardName))
+                        .map((w) => (
+                          <button
+                            key={w.WardId}
+                            type="button"
+                            onClick={() => toggleWard(w.WardId)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                              selectedWardIds.includes(w.WardId)
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {w.WardName}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                  <div className="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto">
+                    <div className="flex flex-wrap gap-2">
+                      {wards.map((w) => (
+                        <label
+                          key={w.WardId}
+                          className="inline-flex items-center gap-2 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedWardIds.includes(w.WardId)}
+                            onChange={() => toggleWard(w.WardId)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">
+                            {w.WardName}
+                            {w.DistrictName ? ` (${w.DistrictName})` : ''}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              )}
-              <div className="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto">
-                <div className="flex flex-wrap gap-2">
-                  {allWards.map((ward) => (
-                    <label
-                      key={ward}
-                      className="inline-flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={wardIds.includes(ward)}
-                        onChange={() => toggleWard(ward)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{ward}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700">Loại cảnh báo</p>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={alertOnRain}
-                  onChange={(e) => setAlertOnRain(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Cảnh báo khi có mưa</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={alertOnHeavyRain}
-                  onChange={(e) => setAlertOnHeavyRain(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Cảnh báo khi mưa nặng</span>
-              </label>
-            </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Loại cảnh báo</p>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={alertOnRain}
+                      onChange={(e) => setAlertOnRain(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Cảnh báo khi có mưa</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={alertOnHeavyRain}
+                      onChange={(e) => setAlertOnHeavyRain(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Cảnh báo khi mưa nặng</span>
+                  </label>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
@@ -170,9 +212,10 @@ export default function NotificationSettingsModal({
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={saving || loadingSubscriptions}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              Lưu
+              {saving ? 'Đang lưu...' : 'Lưu'}
             </button>
           </div>
         </div>

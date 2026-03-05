@@ -1,4 +1,9 @@
-export default function Legend() {
+interface LegendProps {
+  showHeatmap?: boolean;
+  onToggleHeatmap?: (show: boolean) => void;
+}
+
+export default function Legend({ showHeatmap = false, onToggleHeatmap }: LegendProps) {
   return (
     <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 z-[1000] border border-gray-200 max-w-xs">
       <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -30,6 +35,20 @@ export default function Legend() {
           </div>
         </div>
       </div>
+      {onToggleHeatmap != null && (
+        <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="legend-heatmap"
+            checked={showHeatmap}
+            onChange={(e) => onToggleHeatmap(e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor="legend-heatmap" className="text-xs font-medium text-gray-700 cursor-pointer">
+            Heatmap
+          </label>
+        </div>
+      )}
       <div className="mt-3 pt-3 border-t border-gray-200">
         <p className="text-xs text-gray-500">
           Click on markers to view camera details

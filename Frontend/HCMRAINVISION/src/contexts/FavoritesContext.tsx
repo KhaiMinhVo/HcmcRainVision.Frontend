@@ -1,6 +1,8 @@
 /**
- * FavoritesContext – user's favorite camera IDs (localStorage)
+ * FavoritesContext – favorites from API (GET/POST/DELETE /api/favorite)
+ * When not authenticated, favorites are empty and toggle prompts sign-in.
  */
+/* eslint-disable react-refresh/only-export-components */
 
 import {
   createContext,
@@ -11,68 +13,98 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { STORAGE_KEYS } from '../constants';
+import type { CameraInfo } from '../types';
+import { useAuth } from './AuthContext';
+import * as favoriteApi from '../services/favoriteApi';
 
 interface FavoritesContextValue {
+  favoriteCameras: CameraInfo[];
   favoriteIds: Set<string>;
   isFavorite: (cameraId: string) => boolean;
-  toggleFavorite: (cameraId: string) => void;
+  toggleFavorite: (cameraId: string) => Promise<void>;
   favoritesCount: number;
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
 }
 
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
-
-function loadFavorites(): Set<string> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw) as string[];
-    return Array.isArray(arr) ? new Set(arr) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function saveFavorites(set: Set<string>) {
-  localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify([...set]));
-}
 
 interface FavoritesProviderProps {
   children: ReactNode;
 }
 
 export function FavoritesProvider({ children }: FavoritesProviderProps) {
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(loadFavorites);
+  const { isAuthenticated } = useAuth();
+  const [favoriteCameras, setFavoriteCameras] = useState<CameraInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(async () => {
+    if (!isAuthenticated) {
+      setFavoriteCameras([]);
+      setError(null);
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const list = await favoriteApi.getFavorites();
+      setFavoriteCameras(list);
+    } catch (e) {
+      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Không tải được danh sách yêu thích.';
+      setError(msg);
+      setFavoriteCameras([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    saveFavorites(favoriteIds);
-  }, [favoriteIds]);
+    refetch();
+  }, [refetch]);
+
+  const favoriteIds = useMemo(() => new Set(favoriteCameras.map((c) => c.id)), [favoriteCameras]);
 
   const isFavorite = useCallback(
     (cameraId: string) => favoriteIds.has(cameraId),
     [favoriteIds]
   );
 
-  const toggleFavorite = useCallback((cameraId: string) => {
-    setFavoriteIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(cameraId)) {
-        next.delete(cameraId);
-      } else {
-        next.add(cameraId);
+  const toggleFavorite = useCallback(
+    async (cameraId: string) => {
+      if (!isAuthenticated) {
+        throw new Error('Vui lòng đăng nhập để thêm vào yêu thích.');
       }
-      return next;
-    });
-  }, []);
+      const currentlyFavorite = favoriteIds.has(cameraId);
+      try {
+        if (currentlyFavorite) {
+          await favoriteApi.removeFavorite(cameraId);
+          setFavoriteCameras((prev) => prev.filter((c) => c.id !== cameraId));
+        } else {
+          await favoriteApi.addFavorite(cameraId);
+          await refetch();
+        }
+      } catch (e) {
+        const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Thao tác thất bại.';
+        throw new Error(msg);
+      }
+    },
+    [isAuthenticated, favoriteIds, refetch]
+  );
 
   const value = useMemo<FavoritesContextValue>(
     () => ({
+      favoriteCameras,
       favoriteIds,
       isFavorite,
       toggleFavorite,
-      favoritesCount: favoriteIds.size,
+      favoritesCount: favoriteCameras.length,
+      loading,
+      error,
+      refetch,
     }),
-    [favoriteIds, isFavorite, toggleFavorite]
+    [favoriteCameras, favoriteIds, isFavorite, toggleFavorite, loading, error, refetch]
   );
 
   return (

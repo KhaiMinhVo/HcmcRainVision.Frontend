@@ -1,8 +1,6 @@
 /**
- * Home Page Component
- * Main page component containing all UI elements and state management
+ * Home Page – cameras and weather from API (GET /api/camera, GET /api/weather/latest)
  */
-
 import { useState, useMemo } from 'react';
 import MapView from '../components/MapView';
 import TimeSlider from '../components/TimeSlider';
@@ -11,43 +9,30 @@ import Header from '../components/Header';
 import CameraList from '../components/CameraList';
 import CameraDetailPanel from '../components/CameraDetailPanel';
 import FavoritesSection from '../components/FavoritesSection';
+import CheckRouteDrawer from '../components/CheckRouteDrawer';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  generateAllMockData,
-  generateTimestamps,
-  CAMERA_LOCATIONS,
-  getAllDistricts,
-  getCameraInfo,
-} from '../data/mockRainData';
+import { useCamerasAndWeather } from '../hooks/useCamerasAndWeather';
 import type { RainDataPoint, RainFilter } from '../types';
 import { RAIN_LEVEL_CONFIG } from '../constants';
 
-export default function Home() {
-  // Generate static data once
-  const timestamps = useMemo(() => generateTimestamps(), []);
-  const allMockData = useMemo(() => generateAllMockData(), []);
-  const districts = useMemo(() => getAllDistricts(), []);
+const SINGLE_TIMESTAMP = 'latest';
 
-  // State management
-  const [currentTimestamp, setCurrentTimestamp] = useState<string>(
-    timestamps[timestamps.length - 1]
-  );
+export default function Home() {
+  const { cameras, rainData: currentRainData, heatmapPoints, districts, loading, error, refetch } = useCamerasAndWeather();
+  const timestamps = useMemo(() => [SINGLE_TIMESTAMP], []);
+
+  const [currentTimestamp, setCurrentTimestamp] = useState<string>(SINGLE_TIMESTAMP);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [districtFilter, setDistrictFilter] = useState('all');
   const [rainFilter, setRainFilter] = useState<RainFilter>('all');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [checkRouteOpen, setCheckRouteOpen] = useState(false);
 
-  // Get current rain data for selected timestamp
-  const currentRainData: RainDataPoint[] = useMemo(() => {
-    return allMockData[currentTimestamp] || [];
-  }, [currentTimestamp, allMockData]);
-
-  // Filter cameras based on search and filters
   const filteredCameras = useMemo(() => {
-    return CAMERA_LOCATIONS.filter((camera) => {
-      // Search filter
+    return cameras.filter((camera) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch =
@@ -57,69 +42,78 @@ export default function Home() {
           camera.district.toLowerCase().includes(query);
         if (!matchesSearch) return false;
       }
-
-      // District filter
-      if (districtFilter !== 'all' && camera.district !== districtFilter) {
-        return false;
-      }
-
-      // Rain filter
+      if (districtFilter !== 'all' && camera.district !== districtFilter) return false;
       if (rainFilter !== 'all') {
         const rainPoint = currentRainData.find((p) => p.id === camera.id);
-        const hasRain = rainPoint?.rainLevel && rainPoint.rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN;
+        const hasRain = rainPoint?.rainLevel != null && rainPoint.rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN;
         if (rainFilter === 'rain' && !hasRain) return false;
         if (rainFilter === 'no-rain' && hasRain) return false;
       }
-
       return true;
     });
-  }, [searchQuery, districtFilter, rainFilter, currentRainData]);
+  }, [cameras, searchQuery, districtFilter, rainFilter, currentRainData]);
 
-  // Get selected camera info (normalize undefined to null for props)
   const selectedCamera = useMemo(() => {
     if (!selectedCameraId) return null;
-    return getCameraInfo(selectedCameraId) ?? null;
-  }, [selectedCameraId]);
+    return cameras.find((c) => c.id === selectedCameraId) ?? null;
+  }, [selectedCameraId, cameras]);
 
-  // Get selected camera rain data
-  const selectedCameraRainData = useMemo(() => {
+  const selectedCameraRainData = useMemo((): RainDataPoint | null => {
     if (!selectedCameraId) return null;
-    return currentRainData.find((p) => p.id === selectedCameraId) || null;
+    return currentRainData.find((p) => p.id === selectedCameraId) ?? null;
   }, [selectedCameraId, currentRainData]);
 
-  // Count cameras with rain
   const camerasWithRain = useMemo(() => {
     return currentRainData.filter((p) => p.rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN).length;
   }, [currentRainData]);
 
   const { isAuthenticated } = useAuth();
 
-  // Handle camera selection
   const handleCameraSelect = (cameraId: string) => {
     setSelectedCameraId(cameraId);
     setIsDetailPanelOpen(true);
   };
 
-  // Handle close detail panel
   const handleCloseDetailPanel = () => {
     setIsDetailPanelOpen(false);
   };
 
+  if (loading && cameras.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-600">Đang tải dữ liệu...</p>
+      </div>
+    );
+  }
+
+  if (error && cameras.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 px-4">
+        <p className="text-red-600 text-center">{error}</p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <Header
         onSearchChange={setSearchQuery}
         onDistrictFilterChange={setDistrictFilter}
         onRainFilterChange={setRainFilter}
         districts={districts}
-        totalCameras={CAMERA_LOCATIONS.length}
+        totalCameras={cameras.length}
         camerasWithRain={camerasWithRain}
+        onOpenCheckRoute={() => setCheckRouteOpen(true)}
       />
 
-      {/* Main Content */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Sidebar - Camera List */}
         <div className={`hidden sm:flex sm:flex-col transition-all duration-300 ${
           isSidebarCollapsed ? 'w-0' : 'w-80 lg:w-96'
         }`}>
@@ -127,21 +121,20 @@ export default function Home() {
             <FavoritesSection onCameraSelect={handleCameraSelect} />
           )}
           <div className="flex-1 min-h-0 flex flex-col">
-          <CameraList
-            cameras={filteredCameras}
-            rainData={currentRainData}
-            selectedCameraId={selectedCameraId}
-            onCameraSelect={handleCameraSelect}
-            searchQuery={searchQuery}
-            districtFilter={districtFilter}
-            rainFilter={rainFilter}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          />
+            <CameraList
+              cameras={filteredCameras}
+              rainData={currentRainData}
+              selectedCameraId={selectedCameraId}
+              onCameraSelect={handleCameraSelect}
+              searchQuery={searchQuery}
+              districtFilter={districtFilter}
+              rainFilter={rainFilter}
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            />
           </div>
         </div>
 
-        {/* Map Section */}
         <div className="flex-1 flex flex-col relative">
           <div className="flex-1 relative">
             <MapView
@@ -149,11 +142,11 @@ export default function Home() {
               cameras={filteredCameras}
               selectedCameraId={selectedCameraId}
               onCameraClick={handleCameraSelect}
+              heatmapPoints={heatmapPoints}
+              showHeatmap={showHeatmap}
             />
-            <Legend />
+            <Legend showHeatmap={showHeatmap} onToggleHeatmap={setShowHeatmap} />
           </div>
-
-          {/* Time Slider */}
           <TimeSlider
             currentTimestamp={currentTimestamp}
             timestamps={timestamps}
@@ -162,7 +155,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Camera Detail Panel */}
       <CameraDetailPanel
         camera={selectedCamera}
         rainData={selectedCameraRainData}
@@ -170,7 +162,8 @@ export default function Home() {
         onClose={handleCloseDetailPanel}
       />
 
-      {/* Mobile Camera List Button */}
+      <CheckRouteDrawer isOpen={checkRouteOpen} onClose={() => setCheckRouteOpen(false)} />
+
       <button
         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         className="fixed bottom-20 right-4 sm:hidden z-40 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
@@ -181,7 +174,6 @@ export default function Home() {
         </svg>
       </button>
 
-      {/* Mobile Camera List Overlay */}
       {!isSidebarCollapsed && (
         <>
           <div
@@ -198,20 +190,20 @@ export default function Home() {
               />
             )}
             <div className="flex-1 min-h-0">
-            <CameraList
-              cameras={filteredCameras}
-              rainData={currentRainData}
-              selectedCameraId={selectedCameraId}
-              onCameraSelect={(id) => {
-                handleCameraSelect(id);
-                setIsSidebarCollapsed(true);
-              }}
-              searchQuery={searchQuery}
-              districtFilter={districtFilter}
-              rainFilter={rainFilter}
-              isCollapsed={false}
-              onToggleCollapse={() => setIsSidebarCollapsed(true)}
-            />
+              <CameraList
+                cameras={filteredCameras}
+                rainData={currentRainData}
+                selectedCameraId={selectedCameraId}
+                onCameraSelect={(id) => {
+                  handleCameraSelect(id);
+                  setIsSidebarCollapsed(true);
+                }}
+                searchQuery={searchQuery}
+                districtFilter={districtFilter}
+                rainFilter={rainFilter}
+                isCollapsed={false}
+                onToggleCollapse={() => setIsSidebarCollapsed(true)}
+              />
             </div>
           </div>
         </>

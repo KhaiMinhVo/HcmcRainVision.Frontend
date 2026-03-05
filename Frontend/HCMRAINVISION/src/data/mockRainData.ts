@@ -1,6 +1,7 @@
 /**
  * Mock data generation for HCMC Rain Detection System
- * This file generates fake camera locations and rain data for development
+ * @deprecated Live data now comes from API (GET /api/camera, GET /api/weather/latest).
+ * Kept only for type reference or optional fallback; no component should import this for live data.
  */
 
 import type { RainLevel, RainDataPoint, CameraInfo } from '../types';

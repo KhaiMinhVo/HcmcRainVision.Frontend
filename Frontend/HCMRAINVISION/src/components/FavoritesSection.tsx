@@ -1,27 +1,23 @@
 /**
- * FavoritesSection – list of favorite cameras (when logged in)
+ * FavoritesSection – list of favorite cameras from API (when logged in)
  */
-
-import { useMemo } from 'react';
 import { useFavorites } from '../contexts/FavoritesContext';
-import { getCameraInfo } from '../data/mockRainData';
-import type { CameraInfo } from '../types';
 
 interface FavoritesSectionProps {
   onCameraSelect: (cameraId: string) => void;
 }
 
 export default function FavoritesSection({ onCameraSelect }: FavoritesSectionProps) {
-  const { favoriteIds, favoritesCount } = useFavorites();
+  const { favoriteCameras, favoritesCount, loading } = useFavorites();
 
-  const favoriteCameras = useMemo(() => {
-    const list: CameraInfo[] = [];
-    favoriteIds.forEach((id) => {
-      const cam = getCameraInfo(id);
-      if (cam) list.push(cam);
-    });
-    return list;
-  }, [favoriteIds]);
+  if (loading && favoriteCameras.length === 0) {
+    return (
+      <div className="p-4 border-b border-gray-200 bg-amber-50/50">
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">Cameras yêu thích</h3>
+        <p className="text-xs text-gray-500">Đang tải...</p>
+      </div>
+    );
+  }
 
   if (favoriteCameras.length === 0) {
     return (

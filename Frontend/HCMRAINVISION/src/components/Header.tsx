@@ -16,6 +16,7 @@ interface HeaderProps {
   districts: string[];
   totalCameras: number;
   camerasWithRain: number;
+  onOpenCheckRoute?: () => void;
 }
 
 export default function Header({
@@ -25,6 +26,7 @@ export default function Header({
   districts,
   totalCameras,
   camerasWithRain,
+  onOpenCheckRoute,
 }: HeaderProps) {
   const [search, setSearch] = useState('');
   const [districtFilter, setDistrictFilter] = useState('all');
@@ -77,14 +79,26 @@ export default function Header({
               </div>
             </div>
 
-            {/* Auth: greeting + bell or Login/Signup */}
+            {/* Check route + Auth */}
             <div className="flex items-center gap-2 ml-4">
+              {onOpenCheckRoute && (
+                <button
+                  type="button"
+                  onClick={onOpenCheckRoute}
+                  className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                >
+                  Kiểm tra đường đi
+                </button>
+              )}
               {isAuthenticated && user ? (
                 <>
                   <span className="hidden sm:inline text-sm text-gray-700">
                     Xin chào, <span className="font-medium text-gray-900">{user.name}</span>
                   </span>
                   <NotificationDropdown />
+                  <Link to="/profile" className="text-sm text-gray-600 hover:text-gray-900">
+                    Hồ sơ
+                  </Link>
                   <button
                     type="button"
                     onClick={logout}

@@ -8,14 +8,18 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { heatLayer } from '@linkurious/leaflet-heat';
 import type { RainDataPoint, CameraInfo } from '../types';
-import { HCMC_CENTER, MAP_CONFIG, RAIN_LEVEL_CONFIG } from '../constants';
+import type { HeatmapPoint } from '../hooks/useCamerasAndWeather';
+import { HCMC_CENTER, HEATMAP_CONFIG, MAP_CONFIG, RAIN_LEVEL_CONFIG } from '../constants';
 
 interface MapViewProps {
   rainData: RainDataPoint[];
   cameras: CameraInfo[];
   selectedCameraId: string | null;
   onCameraClick: (cameraId: string) => void;
+  heatmapPoints?: HeatmapPoint[];
+  showHeatmap?: boolean;
 }
 
 /**
@@ -151,9 +155,12 @@ export default function MapView({
   cameras,
   selectedCameraId,
   onCameraClick,
+  heatmapPoints = [],
+  showHeatmap = false,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const heatLayerRef = useRef<L.Layer | null>(null);
 
   // Create map once on mount; cleanup on unmount
   useEffect(() => {
@@ -196,6 +203,34 @@ export default function MapView({
       markersRef.forEach((marker) => map.removeLayer(marker));
     };
   }, [rainData, cameras, selectedCameraId, onCameraClick]);
+
+  // Heatmap layer: add/remove when showHeatmap or heatmapPoints change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
+    }
+
+    if (showHeatmap && heatmapPoints.length > 0) {
+      const layer = heatLayer(heatmapPoints, {
+        radius: HEATMAP_CONFIG.RADIUS,
+        blur: HEATMAP_CONFIG.BLUR,
+        max: HEATMAP_CONFIG.MAX,
+      });
+      layer.addTo(map);
+      heatLayerRef.current = layer;
+    }
+
+    return () => {
+      if (heatLayerRef.current) {
+        map.removeLayer(heatLayerRef.current);
+        heatLayerRef.current = null;
+      }
+    };
+  }, [showHeatmap, heatmapPoints]);
 
   return (
     <div

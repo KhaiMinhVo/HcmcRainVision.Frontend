@@ -1,13 +1,13 @@
 /**
- * Signup Page – name, email, password, confirm password (mock)
+ * Signup Page – username, email, password, confirm password; POST /api/auth/register
  */
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, getAuthErrorMessage } from '../contexts/AuthContext';
+import { validate } from '../lib/validation';
 
 export default function Signup() {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,28 +20,25 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!name.trim()) {
-      setError('Vui lòng nhập tên.');
-      return;
-    }
-    if (!email.trim()) {
-      setError('Vui lòng nhập email.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Mật khẩu cần ít nhất 6 ký tự.');
-      return;
-    }
     if (password !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp.');
       return;
     }
+    const result = validate('register', {
+      Username: username.trim(),
+      Email: email.trim(),
+      Password: password,
+    });
+    if (!result.valid) {
+      setError(result.firstMessage ?? 'Dữ liệu không hợp lệ. Mật khẩu cần ít nhất 6 ký tự.');
+      return;
+    }
     setLoading(true);
     try {
-      await signup(name.trim(), email.trim(), password);
-      navigate('/', { replace: true });
-    } catch {
-      setError('Đăng ký thất bại. Vui lòng thử lại.');
+      await signup(username.trim(), email.trim(), password);
+      navigate('/login', { replace: true, state: { message: 'Đăng ký thành công! Vui lòng đăng nhập.' } });
+    } catch (err) {
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -66,17 +63,17 @@ export default function Signup() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Họ và tên
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Tên đăng nhập
               </label>
               <input
-                id="name"
+                id="username"
                 type="text"
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Nguyễn Văn A"
+                placeholder="Tên đăng nhập"
               />
             </div>
             <div>

@@ -1,20 +1,22 @@
 /**
- * NotificationsContext – mock notifications list + subscription settings
- * Notifications are mock/realtime; settings stored in localStorage
+ * NotificationsContext – alert subscriptions from API (GET/POST/PUT/DELETE /api/subscriptions)
+ * and wards from API for ward dropdown. Notifications list kept as local state (no backend feed).
  */
-
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import type { NotificationItem, NotificationSettings } from '../types';
-import { STORAGE_KEYS } from '../constants';
+import { useAuth } from './AuthContext';
+import * as subscriptionApi from '../services/subscriptionApi';
+import * as locationApi from '../services/locationApi';
+import type { AlertSubscriptionResponseDto } from '../types/api';
 
 interface NotificationsContextValue {
   notifications: NotificationItem[];
@@ -25,6 +27,17 @@ interface NotificationsContextValue {
   updateSettings: (settings: Partial<NotificationSettings>) => void;
   suggestedWards: string[];
   setSuggestedWards: (wards: string[]) => void;
+  /** API-driven subscriptions */
+  subscriptions: AlertSubscriptionResponseDto[];
+  wards: Array<{ WardId: string; WardName: string; DistrictName: string | null }>;
+  addSubscription: (wardId: string, thresholdProbability?: number) => Promise<void>;
+  removeSubscription: (subscriptionId: string) => Promise<void>;
+  updateSubscription: (
+    subscriptionId: string,
+    data: { ThresholdProbability?: number; IsEnabled?: boolean }
+  ) => Promise<void>;
+  loadingSubscriptions: boolean;
+  refetchSubscriptions: () => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
@@ -35,97 +48,48 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   alertOnHeavyRain: true,
 };
 
-function loadNotifications(): NotificationItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-    if (raw) {
-      const arr = JSON.parse(raw) as NotificationItem[];
-      if (Array.isArray(arr)) return arr;
-    }
-    // Seed a few mock notifications for demo
-    const now = new Date().toISOString();
-    return [
-      { id: 'seed-1', title: 'Có mưa', message: 'Phát hiện mưa tại Phường 1.', read: false, createdAt: now, type: 'rain', ward: 'Phường 1' },
-      { id: 'seed-2', title: 'Cảnh báo mưa nặng', message: 'Mưa nặng tại Phường 5. Lưu ý an toàn giao thông.', read: true, createdAt: now, type: 'heavy_rain', ward: 'Phường 5' },
-    ];
-  } catch {
-    return [];
-  }
-}
-
-function loadSettings(): NotificationSettings {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.NOTIFICATION_SETTINGS);
-    if (!raw) return DEFAULT_SETTINGS;
-    const obj = JSON.parse(raw) as NotificationSettings;
-    return {
-      wardIds: Array.isArray(obj.wardIds) ? obj.wardIds : DEFAULT_SETTINGS.wardIds,
-      alertOnRain: typeof obj.alertOnRain === 'boolean' ? obj.alertOnRain : DEFAULT_SETTINGS.alertOnRain,
-      alertOnHeavyRain:
-        typeof obj.alertOnHeavyRain === 'boolean'
-          ? obj.alertOnHeavyRain
-          : DEFAULT_SETTINGS.alertOnHeavyRain,
-    };
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
-
-/** Create a mock notification */
-function createMockNotification(
-  type: 'rain' | 'heavy_rain',
-  ward: string
-): NotificationItem {
-  const id = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  const isHeavy = type === 'heavy_rain';
-  return {
-    id,
-    title: isHeavy ? 'Cảnh báo mưa nặng' : 'Có mưa',
-    message: isHeavy
-      ? `Mưa nặng tại ${ward}. Lưu ý an toàn giao thông.`
-      : `Phát hiện mưa tại ${ward}.`,
-    read: false,
-    createdAt: new Date().toISOString(),
-    type,
-    ward,
-  };
-}
-
 interface NotificationsProviderProps {
   children: ReactNode;
 }
 
 export function NotificationsProvider({ children }: NotificationsProviderProps) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(loadNotifications);
-  const [settings, setSettingsState] = useState<NotificationSettings>(loadSettings);
+  const { isAuthenticated } = useAuth();
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [settings, setSettingsState] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [suggestedWards, setSuggestedWards] = useState<string[]>([]);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [subscriptions, setSubscriptions] = useState<AlertSubscriptionResponseDto[]>([]);
+  const [wards, setWards] = useState<Array<{ WardId: string; WardName: string; DistrictName: string | null }>>([]);
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+
+  const refetchSubscriptions = useCallback(async () => {
+    if (!isAuthenticated) {
+      setSubscriptions([]);
+      return;
+    }
+    setLoadingSubscriptions(true);
+    try {
+      const [subs, wardsList] = await Promise.all([
+        subscriptionApi.getMySubscriptions(),
+        locationApi.getWards(),
+      ]);
+      setSubscriptions(subs);
+      setWards(wardsList.map((w) => ({ WardId: w.WardId, WardName: w.WardName, DistrictName: w.DistrictName })));
+      setSettingsState((prev) => ({
+        ...prev,
+        wardIds: subs.map((s) => s.WardId),
+        alertOnRain: subs.some((s) => s.IsEnabled) || prev.alertOnRain,
+        alertOnHeavyRain: subs.some((s) => s.IsEnabled) || prev.alertOnHeavyRain,
+      }));
+    } catch {
+      setSubscriptions([]);
+    } finally {
+      setLoadingSubscriptions(false);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
-  }, [notifications]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATION_SETTINGS, JSON.stringify(settings));
-  }, [settings]);
-
-  // Realtime mock: add a notification every 15s if we have subscribed wards
-  useEffect(() => {
-    if (settings.wardIds.length === 0) return;
-    intervalRef.current = setInterval(() => {
-      const ward = settings.wardIds[Math.floor(Math.random() * settings.wardIds.length)];
-      const type = Math.random() > 0.5 ? 'heavy_rain' : 'rain';
-      if (type === 'heavy_rain' && !settings.alertOnHeavyRain) return;
-      if (type === 'rain' && !settings.alertOnRain) return;
-      setNotifications((prev) => {
-        const next = [createMockNotification(type, ward), ...prev];
-        return next.slice(0, 50);
-      });
-    }, 15000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [settings.wardIds, settings.alertOnRain, settings.alertOnHeavyRain]);
+    refetchSubscriptions();
+  }, [refetchSubscriptions]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -146,6 +110,38 @@ export function NotificationsProvider({ children }: NotificationsProviderProps) 
     setSettingsState((prev) => ({ ...prev, ...partial }));
   }, []);
 
+  const addSubscription = useCallback(
+    async (wardId: string, thresholdProbability = 0.7) => {
+      await subscriptionApi.createSubscription({ WardId: wardId, ThresholdProbability: thresholdProbability });
+      await refetchSubscriptions();
+    },
+    [refetchSubscriptions]
+  );
+
+  const removeSubscription = useCallback(
+    async (subscriptionId: string) => {
+      await subscriptionApi.deleteSubscription(subscriptionId);
+      await refetchSubscriptions();
+    },
+    [refetchSubscriptions]
+  );
+
+  const updateSubscriptionCb = useCallback(
+    async (
+      subscriptionId: string,
+      data: { ThresholdProbability?: number; IsEnabled?: boolean }
+    ) => {
+      const sub = subscriptions.find((s) => s.SubscriptionId === subscriptionId);
+      if (!sub) return;
+      await subscriptionApi.updateSubscription(subscriptionId, {
+        ThresholdProbability: data.ThresholdProbability ?? sub.ThresholdProbability,
+        IsEnabled: data.IsEnabled ?? sub.IsEnabled,
+      });
+      await refetchSubscriptions();
+    },
+    [subscriptions, refetchSubscriptions]
+  );
+
   const value = useMemo<NotificationsContextValue>(
     () => ({
       notifications,
@@ -156,6 +152,13 @@ export function NotificationsProvider({ children }: NotificationsProviderProps) 
       updateSettings,
       suggestedWards,
       setSuggestedWards,
+      subscriptions,
+      wards,
+      addSubscription,
+      removeSubscription,
+      updateSubscription: updateSubscriptionCb,
+      loadingSubscriptions,
+      refetchSubscriptions,
     }),
     [
       notifications,
@@ -165,6 +168,13 @@ export function NotificationsProvider({ children }: NotificationsProviderProps) 
       settings,
       updateSettings,
       suggestedWards,
+      subscriptions,
+      wards,
+      addSubscription,
+      removeSubscription,
+      updateSubscriptionCb,
+      loadingSubscriptions,
+      refetchSubscriptions,
     ]
   );
 

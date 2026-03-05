@@ -3,8 +3,9 @@
  * Sidebar displaying list of cameras with filtering and selection
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { CameraInfo, RainDataPoint, RainFilter } from '../types';
+import WardDetailModal from './WardDetailModal';
 import { RAIN_LEVEL_CONFIG } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoritesContext';
@@ -60,6 +61,7 @@ export default function CameraList({
   isCollapsed,
   onToggleCollapse,
 }: CameraListProps) {
+  const [wardDetailId, setWardDetailId] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
 
@@ -119,6 +121,7 @@ export default function CameraList({
   }
 
   return (
+    <>
     <div className="w-full sm:w-80 lg:w-96 bg-white border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
@@ -180,7 +183,23 @@ export default function CameraList({
                         </div>
                         <p className="text-xs text-gray-600 truncate">{camera.address}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {camera.ward}, {camera.district}
+                          {camera.wardId ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setWardDetailId(camera.wardId ?? null);
+                                }}
+                                className="text-blue-600 hover:underline"
+                              >
+                                {camera.ward}
+                              </button>
+                              , {camera.district}
+                            </>
+                          ) : (
+                            `${camera.ward}, ${camera.district}`
+                          )}
                         </p>
                       </div>
                       {isSelected && (
@@ -195,7 +214,9 @@ export default function CameraList({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleFavorite(camera.id);
+                        toggleFavorite(camera.id).catch((err: Error) => {
+                          alert(err?.message ?? 'Thao tác thất bại.');
+                        });
                       }}
                       className="absolute top-4 right-4 p-1 rounded text-gray-400 hover:text-red-500"
                       aria-label={favorited ? 'Bỏ yêu thích' : 'Yêu thích'}
@@ -217,5 +238,11 @@ export default function CameraList({
         )}
       </div>
     </div>
+    <WardDetailModal
+      wardId={wardDetailId ?? ''}
+      isOpen={wardDetailId != null}
+      onClose={() => setWardDetailId(null)}
+    />
+    </>
   );
 }
