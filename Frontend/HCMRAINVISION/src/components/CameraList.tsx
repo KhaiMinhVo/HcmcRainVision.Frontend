@@ -166,10 +166,17 @@ export default function CameraList({
                     isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
                   }`}
                 >
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onCameraSelect(camera.id)}
-                    className="w-full text-left"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onCameraSelect(camera.id);
+                      }
+                    }}
+                    className="w-full text-left cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset rounded"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -188,6 +195,7 @@ export default function CameraList({
                               <button
                                 type="button"
                                 onClick={(e) => {
+                                  e.preventDefault();
                                   e.stopPropagation();
                                   setWardDetailId(camera.wardId ?? null);
                                 }}
@@ -208,7 +216,7 @@ export default function CameraList({
                         </svg>
                       )}
                     </div>
-                  </button>
+                  </div>
                   {isAuthenticated && (
                     <button
                       type="button"

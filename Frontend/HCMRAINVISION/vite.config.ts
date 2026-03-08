@@ -2,32 +2,42 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+const REPO_NAME = 'HcmcRainVision.Frontend'
+
 /**
- * Get base path for GitHub Pages deployment
- * @returns Base path string for the repository
+ * Get base path for GitHub Pages deployment.
+ * In development use '/' so app works at localhost:5173 and at localhost:5173/HcmcRainVision.Frontend/ (via rewrite).
  */
-const getBasePath = (): string => {
-  // Repository name: HcmcRainVision.Frontend
-  const REPO_NAME = 'HcmcRainVision.Frontend'  
-  
+function getBasePath(): string {
+  if (process.env.NODE_ENV === 'development') return '/'
   if (process.env.GITHUB_REPOSITORY) {
     const repoName = process.env.GITHUB_REPOSITORY.split('/')[1]
-    // If repo name is username.github.io, use root path
-    if (repoName.includes('.github.io')) {
-      return '/'
-    }
-    // Otherwise use repo name as base path
+    if (repoName?.includes('.github.io')) return '/'
     return `/${repoName}/`
   }
-  
-  // For local development, use repo name as base path
-  // This ensures consistency between dev and production
-  return `/${REPO_NAME}/`  
+  return `/${REPO_NAME}/`
+}
+
+/** Dev server: rewrite /HcmcRainVision.Frontend/ to / so that URL does not 404 */
+function repoBaseFallbackPlugin() {
+  const basePath = `/${REPO_NAME}`
+  return {
+    name: 'repo-base-fallback',
+    configureServer(server: { middlewares: { use: (fn: (req: import('http').IncomingMessage, res: import('http').ServerResponse, next: () => void) => void) => void } }) {
+      server.middlewares.use((req, _res, next) => {
+        const url = req.url ?? ''
+        if (url === basePath || url.startsWith(basePath + '/') || url.startsWith(basePath + '?')) {
+          req.url = url.slice(basePath.length) || '/'
+        }
+        next()
+      })
+    },
+  }
 }
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [repoBaseFallbackPlugin(), react(), tailwindcss()],
   base: getBasePath(),
   build: {
     outDir: 'dist',

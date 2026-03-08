@@ -1,12 +1,22 @@
 /**
  * Location API: wards, districts, ward by id
+ * Backend may return camelCase; normalize to PascalCase for WardDto.
  */
 import { apiGet } from './apiClient';
 import type { WardDto, WardDetailDto } from '../types/api';
 
+function rawToWardDto(raw: Record<string, unknown>): WardDto {
+  return {
+    WardId: String((raw.wardId ?? raw.WardId) ?? ''),
+    WardName: String((raw.wardName ?? raw.WardName) ?? ''),
+    DistrictName: (raw.districtName ?? raw.DistrictName) as string | null ?? null,
+  };
+}
+
 export async function getWards(): Promise<WardDto[]> {
-  const data = await apiGet<WardDto[]>('api/Location/wards', { retries: 2 });
-  return Array.isArray(data) ? data : [];
+  const data = await apiGet<unknown>('api/Location/wards', { retries: 2 });
+  if (!Array.isArray(data)) return [];
+  return data.map((item) => rawToWardDto((item as Record<string, unknown>) ?? {}));
 }
 
 export async function getDistricts(): Promise<string[]> {
@@ -16,8 +26,9 @@ export async function getDistricts(): Promise<string[]> {
 
 export async function getWardsByDistrict(districtName: string): Promise<WardDto[]> {
   const encoded = encodeURIComponent(districtName);
-  const data = await apiGet<WardDto[]>(`api/Location/wards/by-district/${encoded}`, { retries: 2 });
-  return Array.isArray(data) ? data : [];
+  const data = await apiGet<unknown>(`api/Location/wards/by-district/${encoded}`, { retries: 2 });
+  if (!Array.isArray(data)) return [];
+  return data.map((item) => rawToWardDto((item as Record<string, unknown>) ?? {}));
 }
 
 /** GET /api/Location/wards/{id} – ward detail by WardId */

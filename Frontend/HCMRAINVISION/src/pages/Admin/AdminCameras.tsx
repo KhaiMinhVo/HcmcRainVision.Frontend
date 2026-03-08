@@ -139,7 +139,7 @@ export default function AdminCameras() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {cameras.map((c) => (
+            {(cameras ?? []).map((c) => (
               <tr key={c.id}>
                 <td className="px-4 py-2 text-sm text-gray-900">{c.id}</td>
                 <td className="px-4 py-2 text-sm text-gray-700">{c.name}</td>
@@ -170,7 +170,7 @@ export default function AdminCameras() {
             <input type="number" step="any" placeholder="Longitude" value={form.Longitude} onChange={(e) => setForm((f) => ({ ...f, Longitude: Number(e.target.value) }))} className="w-full border rounded px-3 py-2" />
             <select value={form.WardId ?? ''} onChange={(e) => setForm((f) => ({ ...f, WardId: e.target.value }))} className="w-full border rounded px-3 py-2">
               <option value="">Chọn phường</option>
-              {wards.map((w) => <option key={w.WardId} value={w.WardId}>{w.WardName}</option>)}
+              {(wards ?? []).map((w) => <option key={w.WardId} value={w.WardId}>{w.WardName}</option>)}
             </select>
             <input placeholder="Stream URL" value={form.StreamUrl} onChange={(e) => setForm((f) => ({ ...f, StreamUrl: e.target.value }))} className="w-full border rounded px-3 py-2" />
             <div className="flex gap-2 justify-end pt-2">
@@ -190,7 +190,7 @@ export default function AdminCameras() {
             <input type="number" step="any" value={editForm.Longitude} onChange={(e) => setEditForm((f) => f ? { ...f, Longitude: Number(e.target.value) } : null)} className="w-full border rounded px-3 py-2" />
             <select value={editForm.WardId ?? ''} onChange={(e) => setEditForm((f) => f ? { ...f, WardId: e.target.value || undefined } : null)} className="w-full border rounded px-3 py-2">
               <option value="">Chọn phường</option>
-              {wards.map((w) => <option key={w.WardId} value={w.WardId}>{w.WardName}</option>)}
+              {(wards ?? []).map((w) => <option key={w.WardId} value={w.WardId}>{w.WardName}</option>)}
             </select>
             <input placeholder="Stream URL (tùy chọn)" value={editForm.StreamUrl ?? ''} onChange={(e) => setEditForm((f) => f ? { ...f, StreamUrl: e.target.value || undefined } : null)} className="w-full border rounded px-3 py-2" />
             <div className="flex gap-2 justify-end pt-2">

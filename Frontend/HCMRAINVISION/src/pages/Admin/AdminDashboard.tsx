@@ -96,7 +96,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Rain frequency (simple list) */}
-      {rainFreq.length > 0 && (
+      {Array.isArray(rainFreq) && rainFreq.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
           <h3 className="text-lg font-medium text-gray-800 mb-3">Tần suất mưa theo giờ (7 ngày)</h3>
           <div className="flex flex-wrap gap-2">
@@ -113,39 +113,42 @@ export default function AdminDashboard() {
       )}
 
       {/* Failed cameras */}
-      {failed && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">
-            Camera lỗi (không có dữ liệu 1h) — {failed.TotalFailed}
-          </h3>
-          {failed.Cameras.length === 0 ? (
-            <p className="text-gray-500">Không có camera lỗi.</p>
-          ) : (
-            <ul className="space-y-2">
-              {failed.Cameras.slice(0, 10).map((c) => (
-                <li key={c.Id} className="text-sm text-gray-700">
-                  {c.Name} ({c.Id}) — {c.Status}
-                </li>
-              ))}
-              {failed.Cameras.length > 10 && (
-                <li className="text-gray-500">... và {failed.Cameras.length - 10} camera khác</li>
-              )}
-            </ul>
-          )}
-        </div>
-      )}
+      {failed && (() => {
+        const cameras = failed.Cameras ?? [];
+        return (
+          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+            <h3 className="text-lg font-medium text-gray-800 mb-3">
+              Camera lỗi (không có dữ liệu 1h) — {failed.TotalFailed ?? cameras.length}
+            </h3>
+            {cameras.length === 0 ? (
+              <p className="text-gray-500">Không có camera lỗi.</p>
+            ) : (
+              <ul className="space-y-2">
+                {cameras.slice(0, 10).map((c) => (
+                  <li key={c.Id} className="text-sm text-gray-700">
+                    {c.Name} ({c.Id}) — {c.Status}
+                  </li>
+                ))}
+                {cameras.length > 10 && (
+                  <li className="text-gray-500">... và {cameras.length - 10} camera khác</li>
+                )}
+              </ul>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Camera health summary */}
       {health?.Summary && (
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
           <h3 className="text-lg font-medium text-gray-800 mb-3">Tình trạng camera</h3>
           <div className="flex flex-wrap gap-4">
-            <span className="text-green-700">Active: {health.Summary.Active}</span>
-            <span className="text-red-600">Offline: {health.Summary.Offline}</span>
-            <span className="text-amber-600">Maintenance: {health.Summary.Maintenance}</span>
-            <span className="text-gray-600">Test: {health.Summary.TestMode}</span>
+            <span className="text-green-700">Active: {health.Summary.Active ?? 0}</span>
+            <span className="text-red-600">Offline: {health.Summary.Offline ?? 0}</span>
+            <span className="text-amber-600">Maintenance: {health.Summary.Maintenance ?? 0}</span>
+            <span className="text-gray-600">Test: {health.Summary.TestMode ?? 0}</span>
           </div>
-          <p className="text-xs text-gray-500 mt-2">{health.Summary.Note}</p>
+          {health.Summary.Note && <p className="text-xs text-gray-500 mt-2">{health.Summary.Note}</p>}
         </div>
       )}
     </div>

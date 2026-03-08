@@ -20,13 +20,14 @@ import * as authApi from '../services/authApi';
 import type { UserProfileDto } from '../types/api';
 import type { ApiError } from '../services/apiClient';
 
-function profileToUser(p: UserProfileDto): User {
+function profileToUser(p: UserProfileDto & { role?: string }): User {
+  const role = p.Role ?? p.role;
   return {
     id: p.Id,
     username: p.Username,
     email: p.Email,
     name: p.FullName ?? p.Username,
-    role: p.Role,
+    role: role ?? undefined,
     avatar: p.AvatarUrl ?? undefined,
     fullName: p.FullName,
     phoneNumber: p.PhoneNumber,

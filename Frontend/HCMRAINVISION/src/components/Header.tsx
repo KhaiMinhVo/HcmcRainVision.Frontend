@@ -96,6 +96,11 @@ export default function Header({
                     Xin chào, <span className="font-medium text-gray-900">{user.name}</span>
                   </span>
                   <NotificationDropdown />
+                  {user.role != null && String(user.role).toLowerCase() === 'admin' && (
+                    <Link to="/admin" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                      Trang Admin
+                    </Link>
+                  )}
                   <Link to="/profile" className="text-sm text-gray-600 hover:text-gray-900">
                     Hồ sơ
                   </Link>

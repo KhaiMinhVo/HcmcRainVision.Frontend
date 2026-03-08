@@ -17,7 +17,8 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user.role !== 'Admin') {
+  const isAdmin = user.role != null && String(user.role).toLowerCase() === 'admin';
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <h1 className="text-xl font-semibold text-gray-800">Không có quyền truy cập</h1>

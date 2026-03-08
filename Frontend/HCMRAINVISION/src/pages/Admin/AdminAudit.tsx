@@ -14,7 +14,7 @@ export default function AdminAudit() {
 
   useEffect(() => {
     getAuditData()
-      .then(setItems)
+      .then((data) => setItems(Array.isArray(data) ? data : []))
       .catch((e) => setError(getApiErrorMessage(e, 'Tải dữ liệu thất bại')))
       .finally(() => setLoading(false));
   }, []);
@@ -38,7 +38,7 @@ export default function AdminAudit() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {items.map((a) => (
+            {(items ?? []).map((a) => (
               <tr key={a.ReportId}>
                 <td className="px-4 py-2 text-sm text-gray-900">{a.ReportId}</td>
                 <td className="px-4 py-2 text-sm text-gray-700">{a.CameraId}</td>
@@ -58,7 +58,7 @@ export default function AdminAudit() {
             ))}
           </tbody>
         </table>
-        {items.length === 0 && <p className="p-4 text-gray-500">Chưa có báo cáo nào.</p>}
+        {(items ?? []).length === 0 && <p className="p-4 text-gray-500">Chưa có báo cáo nào.</p>}
       </div>
     </div>
   );

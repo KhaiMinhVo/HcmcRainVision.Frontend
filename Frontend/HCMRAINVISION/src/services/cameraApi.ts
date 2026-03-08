@@ -1,13 +1,34 @@
 /**
  * Camera API: GET /api/camera
+ * Backend may return camelCase; normalize to PascalCase for CameraDto.
  */
 import { apiGet } from './apiClient';
 import type { CameraDto } from '../types/api';
 import type { CameraInfo } from '../types';
 
+export function rawToCameraDto(raw: Record<string, unknown>): CameraDto {
+  return {
+    Id: String((raw.id ?? raw.Id) ?? ''),
+    Name: String((raw.name ?? raw.Name) ?? ''),
+    Latitude: Number(raw.latitude ?? raw.Latitude ?? 0),
+    Longitude: Number(raw.longitude ?? raw.Longitude ?? 0),
+    WardId: (raw.wardId ?? raw.WardId) as string | null | undefined,
+    Status: (raw.status ?? raw.Status) as string | null | undefined,
+  };
+}
+
+/** Backend returns { Total, Page, PageSize, Data } (PascalCase or camelCase). Default pageSize=10; request more to get full list. */
 export async function getCameras(): Promise<CameraDto[]> {
-  const data = await apiGet<CameraDto[]>('api/Camera', { retries: 2 });
-  return Array.isArray(data) ? data : [];
+  const pageSize = 500;
+  const data = await apiGet<unknown>(`api/Camera?page=1&pageSize=${pageSize}`, { retries: 2 });
+  const list = Array.isArray(data)
+    ? data
+    : (data && typeof data === 'object' && 'Data' in data && Array.isArray((data as { Data: unknown }).Data))
+      ? (data as { Data: unknown[] }).Data
+      : (data && typeof data === 'object' && 'data' in data && Array.isArray((data as { data: unknown }).data))
+        ? (data as { data: unknown[] }).data
+        : [];
+  return list.map((item) => rawToCameraDto((item as Record<string, unknown>) ?? {}));
 }
 
 /** Map backend camera to app CameraInfo (ward/district/address from wards map if provided) */

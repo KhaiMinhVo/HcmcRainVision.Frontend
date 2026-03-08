@@ -16,7 +16,7 @@ export default function AdminUsers() {
   const load = () => {
     setError(null);
     getAdminUsers()
-      .then(setUsers)
+      .then((data) => setUsers(Array.isArray(data) ? data : []))
       .catch((e) => setError(getApiErrorMessage(e, 'Tải danh sách thất bại')))
       .finally(() => setLoading(false));
   };
@@ -54,7 +54,7 @@ export default function AdminUsers() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {users.map((u) => (
+            {(users ?? []).map((u) => (
               <tr key={u.Id}>
                 <td className="px-4 py-2 text-sm text-gray-900">{u.Id}</td>
                 <td className="px-4 py-2 text-sm text-gray-700">{u.Username}</td>

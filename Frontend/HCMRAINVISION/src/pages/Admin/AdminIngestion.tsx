@@ -56,9 +56,9 @@ export default function AdminIngestion() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h3 className="font-medium text-gray-800 mb-2">Thống kê (7 ngày)</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-            <div>Jobs: {stats.Jobs.Total} (Success: {stats.Jobs.SuccessRate}%)</div>
-            <div>Attempts: {stats.Attempts.Total} (Success: {stats.Attempts.SuccessRate}%)</div>
-            <div>Avg latency: {stats.Attempts.AvgLatency} ms</div>
+            <div>Jobs: {stats.Jobs?.Total ?? 0} (Success: {stats.Jobs?.SuccessRate ?? 0}%)</div>
+            <div>Attempts: {stats.Attempts?.Total ?? 0} (Success: {stats.Attempts?.SuccessRate ?? 0}%)</div>
+            <div>Avg latency: {stats.Attempts?.AvgLatency ?? 0} ms</div>
           </div>
         </div>
       )}
@@ -80,7 +80,7 @@ export default function AdminIngestion() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {jobs.Jobs.map((j) => (
+                {(jobs.Jobs ?? []).map((j) => (
                   <tr key={j.JobId}>
                     <td className="px-4 py-2 text-sm text-gray-900 font-mono">{String(j.JobId).slice(0, 8)}…</td>
                     <td className="px-4 py-2 text-sm text-gray-700">{j.Status}</td>
@@ -121,7 +121,7 @@ export default function AdminIngestion() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {detail.Attempts.map((a) => (
+              {(detail.Attempts ?? []).map((a) => (
                 <tr key={a.AttemptId}>
                   <td className="px-2 py-1">{a.CameraId}</td>
                   <td className="px-2 py-1">{a.Status}</td>

@@ -10,14 +10,36 @@ import type {
 } from '../types/api';
 import type { RainDataPoint, RainLevel } from '../types';
 
+function rawToWeatherLatestItem(raw: Record<string, unknown>): WeatherLatestItemDto {
+  return {
+    Id: Number(raw.id ?? raw.Id ?? 0),
+    CameraId: String((raw.cameraId ?? raw.CameraId) ?? ''),
+    Latitude: Number(raw.latitude ?? raw.Latitude ?? 0),
+    Longitude: Number(raw.longitude ?? raw.Longitude ?? 0),
+    IsRaining: Boolean(raw.isRaining ?? raw.IsRaining),
+    Confidence: Number(raw.confidence ?? raw.Confidence ?? 0),
+    TimeAgo: String((raw.timeAgo ?? raw.TimeAgo) ?? ''),
+  };
+}
+
+function rawToHeatmapPoint(raw: Record<string, unknown>): HeatmapPointDto {
+  return {
+    Lat: Number(raw.lat ?? raw.Lat ?? 0),
+    Lng: Number(raw.lng ?? raw.Lng ?? 0),
+    Intensity: Number(raw.intensity ?? raw.Intensity ?? 0),
+  };
+}
+
 export async function getLatestWeather(): Promise<WeatherLatestItemDto[]> {
-  const data = await apiGet<WeatherLatestItemDto[]>('api/Weather/latest', { retries: 2 });
-  return Array.isArray(data) ? data : [];
+  const data = await apiGet<unknown>('api/Weather/latest', { retries: 2 });
+  if (!Array.isArray(data)) return [];
+  return data.map((item) => rawToWeatherLatestItem((item as Record<string, unknown>) ?? {}));
 }
 
 export async function getRainHeatmap(): Promise<HeatmapPointDto[]> {
-  const data = await apiGet<HeatmapPointDto[]>('api/Weather/heatmap', { retries: 2 });
-  return Array.isArray(data) ? data : [];
+  const data = await apiGet<unknown>('api/Weather/heatmap', { retries: 2 });
+  if (!Array.isArray(data)) return [];
+  return data.map((item) => rawToHeatmapPoint((item as Record<string, unknown>) ?? {}));
 }
 
 export async function checkRoute(routePoints: RoutePointDto[]): Promise<{

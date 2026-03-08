@@ -1,18 +1,18 @@
 /**
  * Favorites API: GET/POST/DELETE /api/Favorite (requires auth)
+ * Backend may return camelCase; normalize via rawToCameraDto.
  */
 import { apiGet, apiPost, apiDelete } from './apiClient';
-import type { CameraDto } from '../types/api';
 import type { CameraInfo } from '../types';
-import { mapCameraToInfo } from './cameraApi';
+import { mapCameraToInfo, rawToCameraDto } from './cameraApi';
 import { getWards, buildWardMap } from './locationApi';
 
 export async function getFavorites(): Promise<CameraInfo[]> {
-  const data = await apiGet<CameraDto[]>('api/Favorite');
+  const data = await apiGet<unknown>('api/Favorite');
   if (!Array.isArray(data)) return [];
   const wards = await getWards();
   const wardMap = buildWardMap(wards);
-  return data.map((c) => mapCameraToInfo(c, wardMap));
+  return data.map((item) => mapCameraToInfo(rawToCameraDto((item as Record<string, unknown>) ?? {}), wardMap));
 }
 
 export async function addFavorite(cameraId: string): Promise<void> {
