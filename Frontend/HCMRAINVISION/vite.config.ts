@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import path from 'path'
+import fs from 'fs'
 
 const REPO_NAME = 'HcmcRainVision.Frontend'
 
@@ -35,9 +37,24 @@ function repoBaseFallbackPlugin() {
   }
 }
 
+/** Copy index.html to 404.html so GitHub Pages serves the SPA for any path (fix 404 on direct open/refresh) */
+function copyIndexTo404Plugin() {
+  return {
+    name: 'copy-index-to-404',
+    closeBundle() {
+      const outDir = path.resolve(__dirname, 'dist')
+      const indexPath = path.join(outDir, 'index.html')
+      const notFoundPath = path.join(outDir, '404.html')
+      if (fs.existsSync(indexPath)) {
+        fs.copyFileSync(indexPath, notFoundPath)
+      }
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [repoBaseFallbackPlugin(), react(), tailwindcss()],
+  plugins: [repoBaseFallbackPlugin(), react(), tailwindcss(), copyIndexTo404Plugin()],
   base: getBasePath(),
   build: {
     outDir: 'dist',
