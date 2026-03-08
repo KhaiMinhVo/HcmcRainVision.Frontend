@@ -1,7 +1,5 @@
-# Deploy frontend to https://khaiminhvo.github.io/ (root).
-# Build uses base: '/' so the app is served at root. Deploys to repo khaiminhvo/khaiminhvo.github.io.
-# Required: Create repo "khaiminhvo.github.io" and add secret GH_PAT (Personal Access Token with repo scope).
 name: Deploy to GitHub Pages
+
 
 on:
   push:
@@ -12,13 +10,15 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,18 +35,25 @@ jobs:
         run: npm install
         working-directory: Frontend/HCMRAINVISION
 
-      # Build with base '/' so the app is served at https://khaiminhvo.github.io/
       - name: Build
         run: npm run build
         working-directory: Frontend/HCMRAINVISION
-        env:
-          GITHUB_REPOSITORY: khaiminhvo/khaiminhvo.github.io
 
-      - name: Deploy to khaiminhvo.github.io
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          personal_token: ${{ secrets.GH_PAT }}
-          external_repository: khaiminhvo/khaiminhvo.github.io
-          publish_branch: main
-          publish_dir: Frontend/HCMRAINVISION/dist
-          allow_empty_commit: true
+          path: Frontend/HCMRAINVISION/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
