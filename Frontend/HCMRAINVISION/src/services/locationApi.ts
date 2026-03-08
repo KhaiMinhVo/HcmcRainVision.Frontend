@@ -5,24 +5,24 @@ import { apiGet } from './apiClient';
 import type { WardDto, WardDetailDto } from '../types/api';
 
 export async function getWards(): Promise<WardDto[]> {
-  const data = await apiGet<WardDto[]>('api/location/wards', { retries: 2 });
+  const data = await apiGet<WardDto[]>('api/Location/wards', { retries: 2 });
   return Array.isArray(data) ? data : [];
 }
 
 export async function getDistricts(): Promise<string[]> {
-  const data = await apiGet<string[]>('api/location/districts', { retries: 2 });
+  const data = await apiGet<string[]>('api/Location/districts', { retries: 2 });
   return Array.isArray(data) ? data : [];
 }
 
 export async function getWardsByDistrict(districtName: string): Promise<WardDto[]> {
   const encoded = encodeURIComponent(districtName);
-  const data = await apiGet<WardDto[]>(`api/location/wards/by-district/${encoded}`, { retries: 2 });
+  const data = await apiGet<WardDto[]>(`api/Location/wards/by-district/${encoded}`, { retries: 2 });
   return Array.isArray(data) ? data : [];
 }
 
-/** GET /api/location/wards/{id} – ward detail by WardId */
+/** GET /api/Location/wards/{id} – ward detail by WardId */
 export async function getWardById(id: string): Promise<WardDetailDto> {
-  return apiGet<WardDetailDto>(`api/location/wards/${encodeURIComponent(id)}`);
+  return apiGet<WardDetailDto>(`api/Location/wards/${encodeURIComponent(id)}`);
 }
 
 /** Build a map WardId -> { wardName, districtName } for camera mapping */

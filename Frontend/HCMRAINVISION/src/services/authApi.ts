@@ -14,29 +14,29 @@ import type {
 } from '../types/api';
 
 export async function login(body: LoginDto): Promise<LoginResponse> {
-  return apiPost<LoginResponse>('api/auth/login', body);
+  return apiPost<LoginResponse>('api/Auth/login', body);
 }
 
 export async function register(body: RegisterDto): Promise<{ message: string }> {
-  return apiPost<{ message: string }>('api/auth/register', body);
+  return apiPost<{ message: string }>('api/Auth/register', body);
 }
 
 export async function getMe(): Promise<UserProfileDto> {
-  return apiGet<UserProfileDto>('api/auth/me');
+  return apiGet<UserProfileDto>('api/Auth/me');
 }
 
 export async function forgotPassword(body: ForgotPasswordDto): Promise<{ message: string }> {
-  return apiPost<{ message: string }>('api/auth/forgot-password', body);
+  return apiPost<{ message: string }>('api/Auth/forgot-password', body);
 }
 
 export async function resetPassword(body: ResetPasswordDto): Promise<{ message: string }> {
-  return apiPost<{ message: string }>('api/auth/reset-password', body);
+  return apiPost<{ message: string }>('api/Auth/reset-password', body);
 }
 
 export async function updateProfile(body: UpdateProfileDto): Promise<{ message: string }> {
-  return apiPut<{ message: string }>('api/auth/me', body);
+  return apiPut<{ message: string }>('api/Auth/me', body);
 }
 
 export async function changePassword(body: ChangePasswordDto): Promise<{ message: string }> {
-  return apiPost<{ message: string }>('api/auth/change-password', body);
+  return apiPost<{ message: string }>('api/Auth/change-password', body);
 }

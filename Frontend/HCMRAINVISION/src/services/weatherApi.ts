@@ -11,12 +11,12 @@ import type {
 import type { RainDataPoint, RainLevel } from '../types';
 
 export async function getLatestWeather(): Promise<WeatherLatestItemDto[]> {
-  const data = await apiGet<WeatherLatestItemDto[]>('api/weather/latest', { retries: 2 });
+  const data = await apiGet<WeatherLatestItemDto[]>('api/Weather/latest', { retries: 2 });
   return Array.isArray(data) ? data : [];
 }
 
 export async function getRainHeatmap(): Promise<HeatmapPointDto[]> {
-  const data = await apiGet<HeatmapPointDto[]>('api/weather/heatmap', { retries: 2 });
+  const data = await apiGet<HeatmapPointDto[]>('api/Weather/heatmap', { retries: 2 });
   return Array.isArray(data) ? data : [];
 }
 
@@ -24,11 +24,11 @@ export async function checkRoute(routePoints: RoutePointDto[]): Promise<{
   IsSafe: boolean;
   Warnings: Array<{ Lat: number; Lng: number; Message: string }>;
 }> {
-  return apiPost('api/weather/check-route', routePoints);
+  return apiPost('api/Weather/check-route', routePoints);
 }
 
 export async function reportIncorrectPrediction(body: ReportDto): Promise<{ message: string }> {
-  return apiPost('api/weather/report', body);
+  return apiPost('api/Weather/report', body);
 }
 
 /** Map latest item to RainDataPoint (rainLevel from IsRaining + Confidence) */

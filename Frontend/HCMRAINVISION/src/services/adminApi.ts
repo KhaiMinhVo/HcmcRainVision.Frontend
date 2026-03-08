@@ -16,7 +16,7 @@ import type {
 } from '../types/api';
 import type { CreateCameraRequest, UpdateCameraRequest } from '../types/api';
 
-const prefix = 'api/admin';
+const prefix = 'api/Admin';
 
 /** GET /api/admin/stats – system overview stats */
 export async function getAdminStats(): Promise<AdminStatsDto> {
@@ -80,15 +80,15 @@ export async function getIngestionStats(days?: number): Promise<IngestionStatsDt
 
 /** POST /api/camera – create camera (Admin) */
 export async function createCamera(body: CreateCameraRequest): Promise<{ camera: unknown; message: string }> {
-  return apiPost<{ camera: unknown; message: string }>('api/camera', body);
+  return apiPost<{ camera: unknown; message: string }>('api/Camera', body);
 }
 
 /** PUT /api/camera/{id} – update camera (Admin) */
 export async function updateCamera(id: string, body: UpdateCameraRequest): Promise<unknown> {
-  return apiPut<unknown>(`api/camera/${encodeURIComponent(id)}`, body);
+  return apiPut<unknown>(`api/Camera/${encodeURIComponent(id)}`, body);
 }
 
 /** DELETE /api/camera/{id} – delete camera (Admin) */
 export async function deleteCamera(id: string): Promise<{ message: string }> {
-  return apiDelete<{ message: string }>(`api/camera/${encodeURIComponent(id)}`);
+  return apiDelete<{ message: string }>(`api/Camera/${encodeURIComponent(id)}`);
 }

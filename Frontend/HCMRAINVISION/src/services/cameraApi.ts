@@ -6,7 +6,7 @@ import type { CameraDto } from '../types/api';
 import type { CameraInfo } from '../types';
 
 export async function getCameras(): Promise<CameraDto[]> {
-  const data = await apiGet<CameraDto[]>('api/camera', { retries: 2 });
+  const data = await apiGet<CameraDto[]>('api/Camera', { retries: 2 });
   return Array.isArray(data) ? data : [];
 }
 
