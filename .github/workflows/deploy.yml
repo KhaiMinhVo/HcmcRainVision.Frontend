@@ -12,6 +12,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # Cho phép tải actions từ GitHub (tránh 401 khi dùng actions/deploy-pages, actions/checkout, ...)
+  actions: read
 
 concurrency:
   group: "pages"
