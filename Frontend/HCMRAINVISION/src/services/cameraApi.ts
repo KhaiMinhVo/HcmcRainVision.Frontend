@@ -14,6 +14,7 @@ export function rawToCameraDto(raw: Record<string, unknown>): CameraDto {
     Longitude: Number(raw.longitude ?? raw.Longitude ?? 0),
     WardId: (raw.wardId ?? raw.WardId) as string | null | undefined,
     Status: (raw.status ?? raw.Status) as string | null | undefined,
+    StreamUrl: (raw.streamUrl ?? raw.StreamUrl) as string | null | undefined,
   };
 }
 
@@ -29,6 +30,21 @@ export async function getCameras(): Promise<CameraDto[]> {
         ? (data as { data: unknown[] }).data
         : [];
   return list.map((item) => rawToCameraDto((item as Record<string, unknown>) ?? {}));
+}
+
+/** GET /api/Camera/{id} – chi tiết một camera (StreamUrl, v.v.). Returns null if 404. */
+export async function getCameraById(id: string): Promise<CameraDto | null> {
+  try {
+    const raw = await apiGet<Record<string, unknown>>(
+      `api/Camera/${encodeURIComponent(id)}`,
+      { retries: 1 }
+    );
+    return rawToCameraDto(raw ?? {});
+  } catch (e) {
+    const err = e as { status?: number };
+    if (err?.status === 404) return null;
+    throw e;
+  }
 }
 
 /** Map backend camera to app CameraInfo (ward/district/address from wards map if provided) */
@@ -50,5 +66,6 @@ export function mapCameraToInfo(
     wardId: c.WardId ?? undefined,
     lat: c.Latitude,
     lng: c.Longitude,
+    streamUrl: c.StreamUrl ?? undefined,
   };
 }

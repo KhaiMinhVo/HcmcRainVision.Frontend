@@ -4,9 +4,11 @@
 import { getToken, clearToken } from '../lib/authStorage';
 import { API_TIMEOUT_MS } from '../constants';
 
-const baseURL =
+/** Base URL for API (and proxy endpoints like camera snapshot). */
+export const apiBaseURL =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
   'http://localhost:5057';
+const baseURL = apiBaseURL;
 
 export interface ApiError {
   status: number;

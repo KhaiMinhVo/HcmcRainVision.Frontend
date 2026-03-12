@@ -157,6 +157,7 @@ export default function Home() {
 
       <CameraDetailPanel
         camera={selectedCamera}
+        cameraId={selectedCameraId}
         rainData={selectedCameraRainData}
         isOpen={isDetailPanelOpen}
         onClose={handleCloseDetailPanel}

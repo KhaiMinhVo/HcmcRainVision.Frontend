@@ -1,19 +1,23 @@
 /**
  * CameraDetailPanel Component
- * Bottom sheet (mobile) / Sidebar (desktop) showing camera details and video
+ * Bottom sheet (mobile) / Sidebar (desktop) showing camera details and snapshot image
  */
 
 import { useEffect, useState } from 'react';
 import type { CameraInfo, RainDataPoint } from '../types';
+import type { CameraDto } from '../types/api';
 import { RAIN_LEVEL_CONFIG } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { getCameraById } from '../services/cameraApi';
 import { reportIncorrectPrediction } from '../services/weatherApi';
+import { apiBaseURL } from '../services/apiClient';
 import { validate } from '../lib/validation';
 import WardDetailModal from './WardDetailModal';
 
 interface CameraDetailPanelProps {
   camera: CameraInfo | null;
+  cameraId: string | null;
   rainData: RainDataPoint | null;
   isOpen: boolean;
   onClose: () => void;
@@ -52,6 +56,7 @@ const getRainStatus = (rainLevel: number) => {
 
 export default function CameraDetailPanel({
   camera,
+  cameraId,
   rainData,
   isOpen,
   onClose,
@@ -68,6 +73,41 @@ export default function CameraDetailPanel({
     };
   }, [isOpen]);
 
+  const [detail, setDetail] = useState<CameraDto | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  // Fetch camera detail (StreamUrl, etc.) when panel opens with a camera id
+  useEffect(() => {
+    if (!isOpen || !cameraId) {
+      setDetail(null);
+      setDetailError(null);
+      setImageError(false);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    setDetailError(null);
+    setImageError(false);
+    getCameraById(cameraId)
+      .then((data) => {
+        if (!cancelled) {
+          setDetail(data ?? null);
+          if (data == null) setDetailError('Không tìm thấy camera.');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDetailError('Không tải được thông tin camera.');
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, cameraId]);
+
   const { isAuthenticated } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -78,9 +118,10 @@ export default function CameraDetailPanel({
   const [wardDetailId, setWardDetailId] = useState<string | null>(null);
 
   const handleReportSubmit = async () => {
-    if (!camera) return;
+    const camId = effectiveCamera?.id ?? cameraId;
+    if (!camId) return;
     setReportError(null);
-    const payload = { CameraId: camera.id, IsRaining: reportIsRaining, Note: reportNote.trim() || undefined };
+    const payload = { CameraId: camId, IsRaining: reportIsRaining, Note: reportNote.trim() || undefined };
     const result = validate('report', payload);
     if (!result.valid) {
       setReportError(result.firstMessage ?? 'Dữ liệu không hợp lệ.');
@@ -89,7 +130,7 @@ export default function CameraDetailPanel({
     setReportLoading(true);
     try {
       await reportIncorrectPrediction({
-        CameraId: camera.id,
+        CameraId: camId,
         IsRaining: reportIsRaining,
         Note: reportNote.trim() || undefined,
       });
@@ -102,14 +143,19 @@ export default function CameraDetailPanel({
     }
   };
 
-  if (!camera || !isOpen) return null;
+  if (!isOpen || (!camera && !cameraId)) return null;
+
+  const effectiveCamera = camera ?? (detail ? { id: detail.Id, name: detail.Name, address: detail.Name, ward: '', district: '', lat: detail.Latitude, lng: detail.Longitude } : null);
 
   const rainLevel = rainData?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
   const rainStatus = getRainStatus(rainLevel);
-  const favorited = isAuthenticated && isFavorite(camera.id);
+  const favorited = isAuthenticated && effectiveCamera && isFavorite(effectiveCamera.id);
   const lastUpdate = rainData?.timestamp
     ? new Date(rainData.timestamp).toLocaleString('vi-VN')
     : 'N/A';
+  const displayName = effectiveCamera?.name ?? detail?.Name ?? 'Camera';
+  const snapshotUrl = cameraId ? `${apiBaseURL.replace(/\/$/, '')}/api/Camera/${encodeURIComponent(cameraId)}/snapshot` : null;
+  const showImage = snapshotUrl && !detailLoading && !detailError && !imageError;
 
   return (
     <>
@@ -129,15 +175,15 @@ export default function CameraDetailPanel({
           {/* Header */}
           <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold text-gray-900 truncate">{camera.name}</h2>
-              <p className="text-xs text-gray-600 mt-1 truncate">{camera.district}</p>
+              <h2 className="text-lg font-semibold text-gray-900 truncate">{displayName}</h2>
+              <p className="text-xs text-gray-600 mt-1 truncate">{effectiveCamera?.district ?? detail?.Name ?? ''}</p>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
-              {isAuthenticated && (
+              {isAuthenticated && effectiveCamera && (
                 <button
                   type="button"
                   onClick={() =>
-                    toggleFavorite(camera.id).catch((err: Error) => {
+                    toggleFavorite(effectiveCamera.id).catch((err: Error) => {
                       alert(err?.message ?? 'Thao tác thất bại.');
                     })
                   }
@@ -195,57 +241,74 @@ export default function CameraDetailPanel({
             </div>
 
             {/* Camera Info */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Camera Information</h3>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="text-gray-600">Address:</span>
-                    <p className="text-gray-900 font-medium">{camera.address}</p>
-                  </div>
-                  <div className="flex gap-4">
+            {effectiveCamera && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Camera Information</h3>
+                  <div className="space-y-2 text-sm">
                     <div>
-                      <span className="text-gray-600">Ward: </span>
-                      {camera.wardId ? (
-                        <button
-                          type="button"
-                          onClick={() => setWardDetailId(camera.wardId ?? null)}
-                          className="text-gray-900 font-medium text-blue-600 hover:underline"
-                        >
-                          {camera.ward}
-                        </button>
-                      ) : (
-                        <span className="text-gray-900 font-medium">{camera.ward}</span>
-                      )}
+                      <span className="text-gray-600">Address:</span>
+                      <p className="text-gray-900 font-medium">{effectiveCamera.address}</p>
+                    </div>
+                    <div className="flex gap-4">
+                      <div>
+                        <span className="text-gray-600">Ward: </span>
+                        {effectiveCamera.wardId ? (
+                          <button
+                            type="button"
+                            onClick={() => setWardDetailId(effectiveCamera!.wardId ?? null)}
+                            className="text-gray-900 font-medium text-blue-600 hover:underline"
+                          >
+                            {effectiveCamera.ward}
+                          </button>
+                        ) : (
+                          <span className="text-gray-900 font-medium">{effectiveCamera.ward}</span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-gray-600">District: </span>
+                        <span className="text-gray-900 font-medium">{effectiveCamera.district}</span>
+                      </div>
                     </div>
                     <div>
-                      <span className="text-gray-600">District: </span>
-                      <span className="text-gray-900 font-medium">{camera.district}</span>
+                      <span className="text-gray-600">Coordinates: </span>
+                      <span className="text-gray-900 font-mono text-xs">
+                        {effectiveCamera.lat.toFixed(6)}, {effectiveCamera.lng.toFixed(6)}
+                      </span>
                     </div>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Coordinates: </span>
-                    <span className="text-gray-900 font-mono text-xs">
-                      {camera.lat.toFixed(6)}, {camera.lng.toFixed(6)}
-                    </span>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Video Player Section */}
+            {/* Camera snapshot / image */}
             <div className="bg-gray-900 rounded-lg overflow-hidden">
               <div className="aspect-video bg-gray-800 flex items-center justify-center relative">
-                {/* Mock Video Placeholder */}
-                <div className="text-center text-gray-400">
-                  <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm">Live Camera Feed</p>
-                  <p className="text-xs mt-1 opacity-75">Mock Video Stream</p>
-                </div>
-
-                {/* Rain Overlay Indicator */}
+                {detailLoading && (
+                  <div className="text-center text-gray-400">
+                    <svg className="w-10 h-10 mx-auto mb-2 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <p className="text-sm">Đang tải hình ảnh...</p>
+                  </div>
+                )}
+                {!detailLoading && (detailError || !showImage) && (
+                  <div className="text-center text-gray-400 px-4">
+                    <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm">{detailError ?? 'Không tải được hình ảnh camera'}</p>
+                  </div>
+                )}
+                {showImage && snapshotUrl && (
+                  <img
+                    src={snapshotUrl}
+                    alt="Camera"
+                    className="w-full h-full object-contain"
+                    onError={() => setImageError(true)}
+                  />
+                )}
                 {rainLevel > RAIN_LEVEL_CONFIG.NO_RAIN && (
                   <div className="absolute top-2 right-2">
                     <div className={`${rainStatus.color} ${rainStatus.textColor} px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1`}>
@@ -255,6 +318,9 @@ export default function CameraDetailPanel({
                   </div>
                 )}
               </div>
+              <p className="text-xs text-gray-500 p-2 text-center bg-gray-800 text-gray-400">
+                Dữ liệu camera từ Cổng thông tin giao thông TP.HCM
+              </p>
             </div>
 
             {/* History Section - placeholder when no time-series from API */}

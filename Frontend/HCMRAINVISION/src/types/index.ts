@@ -34,6 +34,8 @@ export interface CameraInfo {
   wardId?: string;
   lat: number;
   lng: number;
+  /** URL for camera snapshot/image (from backend StreamUrl) */
+  streamUrl?: string | null;
 }
 
 /**

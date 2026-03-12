@@ -64,6 +64,7 @@ export interface CameraDto {
   Longitude: number;
   WardId?: string | null;
   Status?: string | null;
+  StreamUrl?: string | null;
 }
 
 /** POST /api/weather/report */
