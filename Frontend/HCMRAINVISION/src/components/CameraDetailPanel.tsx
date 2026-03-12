@@ -11,7 +11,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { getCameraById } from '../services/cameraApi';
 import { reportIncorrectPrediction } from '../services/weatherApi';
-import { apiBaseURL } from '../services/apiClient';
 import { validate } from '../lib/validation';
 import WardDetailModal from './WardDetailModal';
 
@@ -154,8 +153,9 @@ export default function CameraDetailPanel({
     ? new Date(rainData.timestamp).toLocaleString('vi-VN')
     : 'N/A';
   const displayName = effectiveCamera?.name ?? detail?.Name ?? 'Camera';
-  const snapshotUrl = cameraId ? `${apiBaseURL.replace(/\/$/, '')}/api/Camera/${encodeURIComponent(cameraId)}/snapshot` : null;
-  const showImage = snapshotUrl && !detailLoading && !detailError && !imageError;
+  /** Link ảnh camera trực tiếp từ API (StreamUrl) – không cần backend proxy */
+  const imageUrl = detail?.StreamUrl ?? camera?.streamUrl ?? undefined;
+  const showImage = !!imageUrl && !imageError;
 
   return (
     <>
@@ -293,17 +293,31 @@ export default function CameraDetailPanel({
                     <p className="text-sm">Đang tải hình ảnh...</p>
                   </div>
                 )}
-                {!detailLoading && (detailError || !showImage) && (
+                {detailLoading && !imageUrl && (
+                  <div className="text-center text-gray-400">
+                    <svg className="w-10 h-10 mx-auto mb-2 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <p className="text-sm">Đang tải thông tin camera...</p>
+                  </div>
+                )}
+                {!detailLoading && detailError && !imageUrl && (
+                  <div className="text-center text-gray-400 px-4">
+                    <p className="text-sm">{detailError}</p>
+                  </div>
+                )}
+                {!showImage && !detailLoading && !detailError && (
                   <div className="text-center text-gray-400 px-4">
                     <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    <p className="text-sm">{detailError ?? 'Không tải được hình ảnh camera'}</p>
+                    <p className="text-sm">Không có link ảnh camera hoặc không tải được</p>
                   </div>
                 )}
-                {showImage && snapshotUrl && (
+                {showImage && imageUrl && (
                   <img
-                    src={snapshotUrl}
+                    src={imageUrl}
                     alt="Camera"
                     className="w-full h-full object-contain"
                     onError={() => setImageError(true)}
