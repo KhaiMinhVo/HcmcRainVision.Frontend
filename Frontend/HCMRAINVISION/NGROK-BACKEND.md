@@ -2,6 +2,17 @@
 
 **Lưu ý:** Domain ngrok (vd: `https://xxxx.ngrok-free.app`) là **API backend**, không phải trang web. Mở thẳng URL đó trong trình duyệt sẽ thấy 404 hoặc trang trống — bình thường. Dùng app bằng cách chạy **Frontend** (`npm run dev`) rồi mở http://localhost:5173; app sẽ gọi API qua domain ngrok. Muốn xem API: mở `https://xxxx.ngrok-free.app/swagger`.
 
+## Trang FE deploy (GitHub Pages) bị timeout?
+
+App đọc **URL backend từ file `public/config.json`** (runtime). Mặc định là Render; nếu Render ngủ hoặc timeout, bạn có thể trỏ sang backend khác (vd ngrok) **không cần build lại**:
+
+1. Sửa `public/config.json`, đặt `apiBaseUrl` thành URL backend đang chạy (vd ngrok):
+   ```json
+   { "apiBaseUrl": "https://xxxx.ngrok-free.app" }
+   ```
+2. Commit, push → GitHub Actions build & deploy. Trang https://khaiminhvo.github.io/HcmcRainVision.Frontend/ sẽ gọi API qua URL trong `config.json`.
+3. Timeout mặc định đã tăng lên 30s để backend free tier có thời gian cold-start.
+
 ## 1. Chạy backend trên máy (port 5057)
 
 Ở thư mục backend (HcmcRainVision.Backend), chạy:

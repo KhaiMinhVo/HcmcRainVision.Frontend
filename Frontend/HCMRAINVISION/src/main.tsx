@@ -3,8 +3,32 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const CONFIG_URL = (import.meta.env.BASE_URL || '/') + 'config.json'
+const CONFIG_TIMEOUT_MS = 3000
+
+function loadRuntimeConfig(): Promise<void> {
+  return new Promise((resolve) => {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), CONFIG_TIMEOUT_MS)
+    fetch(CONFIG_URL, { signal: controller.signal })
+      .then((r) => r.json())
+      .then((data: { apiBaseUrl?: string }) => {
+        if (data?.apiBaseUrl && typeof data.apiBaseUrl === 'string') {
+          window.__API_BASE_URL__ = data.apiBaseUrl.replace(/\/$/, '')
+        }
+      })
+      .catch(() => { /* dùng URL mặc định từ build */ })
+      .finally(() => {
+        clearTimeout(id)
+        resolve()
+      })
+  })
+}
+
+loadRuntimeConfig().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+})

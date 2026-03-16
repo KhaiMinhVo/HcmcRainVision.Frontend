@@ -86,6 +86,6 @@ export const STORAGE_KEYS = {
   NOTIFICATION_SETTINGS: 'hcm_rain_notification_settings',
 } as const;
 
-/** Default request timeout in ms */
-export const API_TIMEOUT_MS = 15_000;
+/** Default request timeout in ms (backend free tier có thể cold-start chậm) */
+export const API_TIMEOUT_MS = 30_000;
 

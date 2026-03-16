@@ -4,11 +4,20 @@
 import { getToken, clearToken } from '../lib/authStorage';
 import { API_TIMEOUT_MS } from '../constants';
 
-/** Base URL for API (and proxy endpoints like camera snapshot). */
-export const apiBaseURL =
+/** Build-time default (fallback khi không có config runtime). */
+const defaultBaseURL =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
   'http://localhost:5057';
-const baseURL = apiBaseURL;
+
+/** Base URL: ưu tiên config runtime (config.json) để deploy trỏ đúng backend, tránh timeout. */
+function getBaseURL(): string {
+  if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
+    return window.__API_BASE_URL__;
+  }
+  return defaultBaseURL;
+}
+
+export const apiBaseURL = defaultBaseURL;
 
 export interface ApiError {
   status: number;
@@ -17,8 +26,9 @@ export interface ApiError {
 }
 
 function buildUrl(path: string): string {
+  const base = getBaseURL().replace(/\/$/, '');
   const p = path.startsWith('/') ? path : `/${path}`;
-  return `${baseURL.replace(/\/$/, '')}${p}`;
+  return `${base}${p}`;
 }
 
 function redirectToLogin(): void {
@@ -45,7 +55,7 @@ export async function apiRequest<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
   // Ngrok free: bỏ qua trang cảnh báo trình duyệt, cho phép request từ FE chạy qua
-  if (baseURL.includes('ngrok')) {
+  if (getBaseURL().includes('ngrok')) {
     headers.set('ngrok-skip-browser-warning', 'true');
   }
 
