@@ -64,7 +64,7 @@ export default function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-96 max-h-[80vh] bg-white rounded-lg shadow-xl border border-gray-200 z-[1000] flex flex-col">
+        <div className="absolute right-0 mt-2 w-96 max-h-[80vh] bg-white rounded-xl shadow-sm border border-gray-200 z-[1000] flex flex-col">
           <div className="p-3 border-b border-gray-200 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">Thông báo</h3>
             {unreadCount > 0 && (

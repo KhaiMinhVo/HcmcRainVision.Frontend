@@ -29,7 +29,7 @@ const getRainStatus = (rainLevel: number) => {
   if (rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN) {
     return {
       level: RAIN_LEVEL_CONFIG.NO_RAIN,
-      label: 'No Rain',
+      label: 'Không mưa',
       color: 'bg-gray-200',
       textColor: 'text-gray-700',
     };
@@ -37,14 +37,14 @@ const getRainStatus = (rainLevel: number) => {
   if (rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN) {
     return {
       level: RAIN_LEVEL_CONFIG.LIGHT_RAIN,
-      label: 'Light Rain',
+      label: 'Mưa nhẹ',
       color: 'bg-yellow-400',
       textColor: 'text-yellow-900',
     };
   }
   return {
     level: RAIN_LEVEL_CONFIG.HEAVY_RAIN,
-    label: 'Heavy Rain',
+    label: 'Mưa nặng',
     color: 'bg-red-500',
     textColor: 'text-white',
   };
@@ -146,8 +146,8 @@ export default function CameraList({
             <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <p className="text-sm">No cameras found</p>
-            <p className="text-xs mt-1">Try adjusting your filters</p>
+            <p className="text-sm">Không tìm thấy camera</p>
+            <p className="text-xs mt-1">Thử điều chỉnh bộ lọc</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">

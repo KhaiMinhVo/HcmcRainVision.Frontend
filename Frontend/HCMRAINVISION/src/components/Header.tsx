@@ -54,8 +54,8 @@ export default function Header({
   };
 
   return (
-    <header className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-full mx-auto">
+    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto w-full">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
@@ -149,7 +149,7 @@ export default function Header({
         </div>
 
         {/* Filters Section */}
-        <div className={`px-4 sm:px-6 lg:px-8 pb-4 border-t border-gray-100 ${isMobileMenuOpen ? 'block' : 'hidden lg:block'}`}>
+        <div className={`px-4 sm:px-6 lg:px-8 pb-4 pt-1 border-t border-gray-100 ${isMobileMenuOpen ? 'block' : 'hidden lg:block'}`}>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <div className="relative">

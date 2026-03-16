@@ -41,7 +41,7 @@ export default function FavoritesSection({ onCameraSelect }: FavoritesSectionPro
             <button
               type="button"
               onClick={() => onCameraSelect(cam.id)}
-              className="w-full text-left text-xs py-2 px-2 rounded hover:bg-amber-100 truncate"
+              className="w-full text-left text-xs py-2 px-2 rounded-lg hover:bg-amber-100 truncate focus:ring-2 focus:ring-amber-400 focus:ring-offset-1"
             >
               {cam.name}
             </button>

@@ -8,7 +8,8 @@ import { validate } from '../../lib/validation';
 import * as locationApi from '../../services/locationApi';
 import type { CameraInfo } from '../../types';
 import type { CreateCameraRequest, UpdateCameraRequest, WardDto } from '../../types/api';
-import { ADMIN_LOADING_TEXT, getApiErrorMessage } from './adminShared';
+import { getApiErrorMessage } from './adminShared';
+import AdminLoadingBlock from './AdminLoadingBlock';
 import AdminErrorMessage from './AdminErrorMessage';
 
 export default function AdminCameras() {
@@ -121,47 +122,49 @@ export default function AdminCameras() {
       .catch((e) => setError(getApiErrorMessage(e, 'Xóa thất bại')));
   };
 
-  if (loading) return <p className="text-gray-600">{ADMIN_LOADING_TEXT}</p>;
+  if (loading) return <AdminLoadingBlock />;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-gray-900">Quản lý camera</h2>
-        <button type="button" onClick={openAdd} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <button type="button" onClick={openAdd} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 font-medium">
           Thêm camera
         </button>
       </div>
       {error && <AdminErrorMessage message={error} />}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tên</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ward / District</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {(cameras ?? []).map((c) => (
-              <tr key={c.id}>
-                <td className="px-4 py-2 text-sm text-gray-900">{c.id}</td>
-                <td className="px-4 py-2 text-sm text-gray-700">{c.name}</td>
-                <td className="px-4 py-2 text-sm text-gray-600">{c.ward}, {c.district}</td>
-                <td className="px-4 py-2 flex gap-2">
-                  <button type="button" onClick={() => openEdit(c)} className="text-blue-600 hover:underline text-sm">Sửa</button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(c.id)}
-                    className="text-red-600 hover:underline text-sm"
-                  >
-                    {deleteConfirm === c.id ? 'Xác nhận xóa?' : 'Xóa'}
-                  </button>
-                </td>
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ward / District</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {(cameras ?? []).map((c) => (
+                <tr key={c.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm text-gray-900">{c.id}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{c.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{c.ward}, {c.district}</td>
+                  <td className="px-4 py-3 flex gap-2">
+                    <button type="button" onClick={() => openEdit(c)} className="text-blue-600 hover:underline text-sm focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 rounded">Sửa</button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(c.id)}
+                      className="text-red-600 hover:underline text-sm focus:ring-2 focus:ring-red-400 focus:ring-offset-1 rounded"
+                    >
+                      {deleteConfirm === c.id ? 'Xác nhận xóa?' : 'Xóa'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {modal === 'add' && (

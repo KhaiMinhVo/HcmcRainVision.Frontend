@@ -87,7 +87,7 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md space-y-6">
-        <div className="bg-white shadow-lg rounded-xl p-8">
+        <div className="bg-white shadow-sm rounded-xl p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Hồ sơ cá nhân</h1>
           <p className="text-sm text-gray-600 mb-4">
             Đăng nhập: <strong>{user?.username}</strong> · {user?.email}
@@ -139,7 +139,7 @@ export default function Profile() {
           </form>
         </div>
 
-        <div className="bg-white shadow-lg rounded-xl p-8">
+        <div className="bg-white shadow-sm rounded-xl p-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Đổi mật khẩu</h2>
           {passwordError && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">{passwordError}</div>
