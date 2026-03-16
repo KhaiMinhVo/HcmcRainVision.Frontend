@@ -23,13 +23,13 @@ interface CameraDetailPanelProps {
 }
 
 /**
- * Get rain status information
+ * Get rain status information (labels in Vietnamese for AI prediction display)
  */
 const getRainStatus = (rainLevel: number) => {
   if (rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN) {
     return {
       level: RAIN_LEVEL_CONFIG.NO_RAIN,
-      label: 'No Rain',
+      label: 'Không mưa',
       color: 'bg-gray-200',
       textColor: 'text-gray-700',
       icon: '☀️',
@@ -38,7 +38,7 @@ const getRainStatus = (rainLevel: number) => {
   if (rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN) {
     return {
       level: RAIN_LEVEL_CONFIG.LIGHT_RAIN,
-      label: 'Light Rain',
+      label: 'Mưa nhẹ',
       color: 'bg-yellow-400',
       textColor: 'text-yellow-900',
       icon: '🌦️',
@@ -46,7 +46,7 @@ const getRainStatus = (rainLevel: number) => {
   }
   return {
     level: RAIN_LEVEL_CONFIG.HEAVY_RAIN,
-    label: 'Heavy Rain',
+    label: 'Mưa nặng',
     color: 'bg-red-500',
     textColor: 'text-white',
     icon: '🌧️',
@@ -225,16 +225,16 @@ export default function CameraDetailPanel({
               </button>
             )}
 
-            {/* Rain Status Card */}
+            {/* AI prediction – rain at current time */}
             <div className={`${rainStatus.color} ${rainStatus.textColor} rounded-lg p-4`}>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-3xl mb-2">{rainStatus.icon}</div>
-                  <div className="text-sm font-medium opacity-90">Rain Status</div>
+                  <div className="text-sm font-medium opacity-90">AI dự đoán (thời điểm hiện tại)</div>
                   <div className="text-2xl font-bold">{rainStatus.label}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs opacity-75">Last Update</div>
+                  <div className="text-xs opacity-75">Cập nhật lúc</div>
                   <div className="text-sm font-medium">{lastUpdate}</div>
                 </div>
               </div>
@@ -339,12 +339,12 @@ export default function CameraDetailPanel({
 
             {/* History Section - placeholder when no time-series from API */}
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Recent History</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Lịch sử gần đây</h3>
               <div className="space-y-2">
                 {[
-                  { label: 'No Rain', className: 'bg-gray-100 text-gray-800' },
-                  { label: 'Light Rain', className: 'bg-yellow-100 text-yellow-800' },
-                  { label: 'No Rain', className: 'bg-gray-100 text-gray-800' },
+                  { label: 'Không mưa', className: 'bg-gray-100 text-gray-800' },
+                  { label: 'Mưa nhẹ', className: 'bg-yellow-100 text-yellow-800' },
+                  { label: 'Không mưa', className: 'bg-gray-100 text-gray-800' },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-gray-200 last:border-0">
                     <div className="flex items-center gap-2">
