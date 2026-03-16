@@ -21,9 +21,12 @@ import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 
+/** Base path for router (phải khớp với Vite base để route đúng khi deploy GitHub Pages). */
+const routerBasename = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL.replace(/\/$/, '');
+
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <AuthProvider>
         <FavoritesProvider>
           <NotificationsProvider>
