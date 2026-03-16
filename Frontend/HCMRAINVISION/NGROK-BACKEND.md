@@ -1,5 +1,7 @@
 # Chạy backend qua ngrok và trỏ Frontend tới đó
 
+**Lưu ý:** Domain ngrok (vd: `https://xxxx.ngrok-free.app`) là **API backend**, không phải trang web. Mở thẳng URL đó trong trình duyệt sẽ thấy 404 hoặc trang trống — bình thường. Dùng app bằng cách chạy **Frontend** (`npm run dev`) rồi mở http://localhost:5173; app sẽ gọi API qua domain ngrok. Muốn xem API: mở `https://xxxx.ngrok-free.app/swagger`.
+
 ## 1. Chạy backend trên máy (port 5057)
 
 Ở thư mục backend (HcmcRainVision.Backend), chạy:

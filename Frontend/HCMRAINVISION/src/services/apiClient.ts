@@ -44,6 +44,10 @@ export async function apiRequest<T>(
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
+  // Ngrok free: bỏ qua trang cảnh báo trình duyệt, cho phép request từ FE chạy qua
+  if (baseURL.includes('ngrok')) {
+    headers.set('ngrok-skip-browser-warning', 'true');
+  }
 
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
