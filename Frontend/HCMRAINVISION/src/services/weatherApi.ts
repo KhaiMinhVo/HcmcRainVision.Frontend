@@ -1,7 +1,7 @@
 /**
  * Weather API: latest, heatmap, check-route, report
  */
-import { apiGet, apiPost } from './apiClient';
+import { apiGet, apiPost, apiPostFormData } from './apiClient';
 import type {
   WeatherLatestItemDto,
   HeatmapPointDto,
@@ -51,6 +51,13 @@ export async function checkRoute(routePoints: RoutePointDto[]): Promise<{
 
 export async function reportIncorrectPrediction(body: ReportDto): Promise<{ message: string }> {
   return apiPost('api/Weather/report', body);
+}
+
+/** POST api/Weather/test-ai – upload image for AI prediction test (multipart). */
+export async function testAi(imageFile: File): Promise<unknown> {
+  const formData = new FormData();
+  formData.append('ImageFile', imageFile);
+  return apiPostFormData<unknown>('api/Weather/test-ai', formData);
 }
 
 /** Map latest item to RainDataPoint (rainLevel from IsRaining + Confidence) */

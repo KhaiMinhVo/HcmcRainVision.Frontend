@@ -157,3 +157,38 @@ export function apiPut<T>(path: string, body: unknown): Promise<T> {
 export function apiDelete<T>(path: string): Promise<T> {
   return apiRequest<T>(path, { method: 'DELETE' });
 }
+/** POST with FormData (multipart). Do not set Content-Type so browser sets boundary. */
+export async function apiPostFormData<T>(path: string, formData: FormData): Promise<T> {
+  const url = buildUrl(path);
+  const token = getToken();
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (getBaseURL().includes('ngrok')) headers.set('ngrok-skip-browser-warning', 'true');
+
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { method: 'POST', body: formData, headers, signal: controller.signal });
+    clearTimeout(id);
+    if (res.status === 401) {
+      redirectToLogin();
+      throw { status: 401, message: 'Unauthorized', body: undefined } as ApiError;
+    }
+    const text = await res.text();
+    let data: unknown;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+    if (!res.ok) {
+      const message = (data && typeof data === 'object' && 'message' in data) ? String((data as { message: string }).message) : `Request failed: ${res.status}`;
+      throw { status: res.status, message, body: data } as ApiError;
+    }
+    return data as T;
+  } catch (e) {
+    clearTimeout(id);
+    if (e && typeof e === 'object' && 'status' in e) throw e;
+    throw { status: 0, message: e instanceof Error ? e.message : 'Network error', body: undefined } as ApiError;
+  }
+}

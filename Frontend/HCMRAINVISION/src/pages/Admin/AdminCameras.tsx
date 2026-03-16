@@ -14,6 +14,11 @@ import AdminErrorMessage from './AdminErrorMessage';
 export default function AdminCameras() {
   const [cameras, setCameras] = useState<CameraInfo[]>([]);
   const [wards, setWards] = useState<WardDto[]>([]);
+  const [districts, setDistricts] = useState<string[]>([]);
+  const [formDistrict, setFormDistrict] = useState<string>('');
+  const [formWards, setFormWards] = useState<WardDto[]>([]);
+  const [editFormDistrict, setEditFormDistrict] = useState<string>('');
+  const [editFormWards, setEditFormWards] = useState<WardDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
@@ -32,11 +37,10 @@ export default function AdminCameras() {
 
   const load = () => {
     setError(null);
-    Promise.all([cameraApi.getCameras(), locationApi.getWards()])
-      .then(([raw, w]) => {
+    Promise.all([cameraApi.getCameras(), locationApi.getWards(), locationApi.getDistricts()])
+      .then(([raw, w, dist]) => {
         const wardMap = locationApi.buildWardMap(w);
-        setCameras(raw.map((c) => cameraApi.mapCameraToInfo(c, wardMap)));
-        setWards(w);
+        setCameras(raw.map((c) => cameraApi.mapCameraToInfo(c, wardMap))); setWards(w); setDistricts(Array.isArray(dist) ? dist : []);
       })
       .catch((e) => setError(getApiErrorMessage(e, 'Tải danh sách thất bại')))
       .finally(() => setLoading(false));
@@ -49,7 +53,7 @@ export default function AdminCameras() {
 
   const openAdd = () => {
     setForm({ Id: '', Name: '', Latitude: 10.77, Longitude: 106.7, WardId: '', StreamUrl: '' });
-    setModal('add');
+    setFormDistrict(''); setFormWards(wards); setModal('add');
   };
 
   const openEdit = (c: CameraInfo) => {
@@ -63,7 +67,7 @@ export default function AdminCameras() {
       Status: undefined,
       StreamUrl: '',
     });
-    setModal('edit');
+    setEditFormDistrict(c.district); if (c.district) { locationApi.getWardsByDistrict(c.district).then(setEditFormWards).catch(() => setEditFormWards(wards)); } else { setEditFormWards(wards); } setModal('edit');
   };
 
   const handleCreate = () => {
@@ -167,10 +171,18 @@ export default function AdminCameras() {
             <input placeholder="Id" value={form.Id} onChange={(e) => setForm((f) => ({ ...f, Id: e.target.value }))} className="w-full border rounded px-3 py-2" />
             <input placeholder="Name" value={form.Name} onChange={(e) => setForm((f) => ({ ...f, Name: e.target.value }))} className="w-full border rounded px-3 py-2" />
             <input type="number" step="any" placeholder="Latitude" value={form.Latitude} onChange={(e) => setForm((f) => ({ ...f, Latitude: Number(e.target.value) }))} className="w-full border rounded px-3 py-2" />
-            <input type="number" step="any" placeholder="Longitude" value={form.Longitude} onChange={(e) => setForm((f) => ({ ...f, Longitude: Number(e.target.value) }))} className="w-full border rounded px-3 py-2" />
+            
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Qu?n</label>
+              <select value={formDistrict} onChange={(e) => { const d = e.target.value; setFormDistrict(d); setForm((f) => ({ ...f, WardId: '' })); if (d) locationApi.getWardsByDistrict(d).then(setFormWards).catch(() => setFormWards(wards)); else setFormWards(wards); }} className="w-full border rounded px-3 py-2">
+                <option value="">T?t c? qu?n</option>
+                {districts.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
             <select value={form.WardId ?? ''} onChange={(e) => setForm((f) => ({ ...f, WardId: e.target.value }))} className="w-full border rounded px-3 py-2">
               <option value="">Chọn phường</option>
-              {(wards ?? []).map((w) => <option key={w.WardId} value={w.WardId}>{w.WardName}</option>)}
+              {(formDistrict ? formWards : wards)?.map((w) => <option key={w.WardId} value={w.WardId}>{w.WardName}</option>) ?? []}
             </select>
             <input placeholder="Stream URL" value={form.StreamUrl} onChange={(e) => setForm((f) => ({ ...f, StreamUrl: e.target.value }))} className="w-full border rounded px-3 py-2" />
             <div className="flex gap-2 justify-end pt-2">
@@ -190,7 +202,7 @@ export default function AdminCameras() {
             <input type="number" step="any" value={editForm.Longitude} onChange={(e) => setEditForm((f) => f ? { ...f, Longitude: Number(e.target.value) } : null)} className="w-full border rounded px-3 py-2" />
             <select value={editForm.WardId ?? ''} onChange={(e) => setEditForm((f) => f ? { ...f, WardId: e.target.value || undefined } : null)} className="w-full border rounded px-3 py-2">
               <option value="">Chọn phường</option>
-              {(wards ?? []).map((w) => <option key={w.WardId} value={w.WardId}>{w.WardName}</option>)}
+              {(editFormDistrict ? editFormWards : wards)?.map((w) => <option key={w.WardId} value={w.WardId}>{w.WardName}</option>) ?? []}
             </select>
             <input placeholder="Stream URL (tùy chọn)" value={editForm.StreamUrl ?? ''} onChange={(e) => setEditForm((f) => f ? { ...f, StreamUrl: e.target.value || undefined } : null)} className="w-full border rounded px-3 py-2" />
             <div className="flex gap-2 justify-end pt-2">

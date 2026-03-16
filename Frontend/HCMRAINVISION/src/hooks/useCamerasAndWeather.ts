@@ -32,11 +32,12 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
     setError(null);
     setLoading(true);
     try {
-      const [camerasRaw, wards, latest, heatmap] = await Promise.all([
+      const [camerasRaw, wards, latest, heatmap, districtsFromApi] = await Promise.all([
         cameraApi.getCameras(),
         locationApi.getWards(),
         weatherApi.getLatestWeather(),
         weatherApi.getRainHeatmap(),
+        locationApi.getDistricts().catch(() => [] as string[]),
       ]);
       const wardMap = locationApi.buildWardMap(wards);
       const cameraList = camerasRaw.map((c) => cameraApi.mapCameraToInfo(c, wardMap));
@@ -47,7 +48,8 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
       setCameras(cameraList);
       setRainData(latest.map(weatherApi.mapLatestToRainPoint));
       setHeatmapPoints(heatmap.map((p) => [p.Lat, p.Lng, p.Intensity]));
-      setDistricts(Array.from(districtSet).sort());
+      const fallbackDistricts = Array.from(districtSet).sort();
+      setDistricts(districtsFromApi.length > 0 ? districtsFromApi.sort() : fallbackDistricts);
     } catch (e) {
       const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Không tải được dữ liệu.';
       setError(msg);

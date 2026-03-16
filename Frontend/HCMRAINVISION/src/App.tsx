@@ -13,6 +13,7 @@ import AdminUsers from './pages/Admin/AdminUsers';
 import AdminAudit from './pages/Admin/AdminAudit';
 import AdminCameras from './pages/Admin/AdminCameras';
 import AdminIngestion from './pages/Admin/AdminIngestion';
+import AdminTestAi from './pages/Admin/AdminTestAi';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -50,6 +51,7 @@ function App() {
                 <Route path="audit" element={<AdminAudit />} />
                 <Route path="cameras" element={<AdminCameras />} />
                 <Route path="ingestion" element={<AdminIngestion />} />
+                <Route path="test-ai" element={<AdminTestAi />} />
               </Route>
               <Route path="/404" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />

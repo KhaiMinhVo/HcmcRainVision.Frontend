@@ -9,6 +9,7 @@ const navItems = [
   { to: '/admin/audit', end: false, label: 'Báo cáo cần duyệt' },
   { to: '/admin/cameras', end: false, label: 'Camera' },
   { to: '/admin/ingestion', end: false, label: 'Ingestion' },
+  { to: '/admin/test-ai', end: false, label: 'Test AI' },
 ];
 
 export default function AdminLayout() {

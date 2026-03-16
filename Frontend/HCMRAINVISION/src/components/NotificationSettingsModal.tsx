@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import * as locationApi from '../services/locationApi';
 
 interface NotificationSettingsModalProps {
   isOpen: boolean;
@@ -33,6 +34,29 @@ export default function NotificationSettingsModal({
   const [alertOnHeavyRain, setAlertOnHeavyRain] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [districtsList, setDistrictsList] = useState<string[]>([]);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
+  const [filteredWards, setFilteredWards] = useState<Array<{ WardId: string; WardName: string; DistrictName: string | null }> | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      locationApi.getDistricts().then(setDistrictsList).catch(() => setDistrictsList([]));
+      setSelectedDistrict('');
+      setFilteredWards(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!selectedDistrict) {
+      setFilteredWards(null);
+      return;
+    }
+    locationApi.getWardsByDistrict(selectedDistrict).then((w) =>
+      setFilteredWards(w.map((x) => ({ WardId: x.WardId, WardName: x.WardName, DistrictName: x.DistrictName })))
+    ).catch(() => setFilteredWards([]));
+  }, [selectedDistrict]);
+
+  const displayWards = filteredWards !== null ? filteredWards : wards;
 
   useEffect(() => {
     const wardNames = new Set<string>();
@@ -127,6 +151,12 @@ export default function NotificationSettingsModal({
             ) : (
               <>
                 <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Qu?n</p>
+                  <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-3 text-sm">
+                    <option value="">T?t c? qu?n</option>
+                    {districtsList.map((d) => (<option key={d} value={d}>{d}</option>))}
+                  </select>
+                  
                   <p className="text-sm font-medium text-gray-700 mb-2">
                     Chọn khu vực (phường) muốn nhận cảnh báo
                   </p>
@@ -135,9 +165,7 @@ export default function NotificationSettingsModal({
                   )}
                   {suggestedWards.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {wards
-                        .filter((w) => suggestedWards.includes(w.WardName))
-                        .map((w) => (
+                      {displayWards.filter((w) => suggestedWards.includes(w.WardName)).map((w) => (
                           <button
                             key={w.WardId}
                             type="button"
@@ -155,7 +183,7 @@ export default function NotificationSettingsModal({
                   )}
                   <div className="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto">
                     <div className="flex flex-wrap gap-2">
-                      {wards.map((w) => (
+                      {displayWards.map((w) => (
                         <label
                           key={w.WardId}
                           className="inline-flex items-center gap-2 cursor-pointer"

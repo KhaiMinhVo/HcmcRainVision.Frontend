@@ -40,3 +40,7 @@ export async function updateProfile(body: UpdateProfileDto): Promise<{ message: 
 export async function changePassword(body: ChangePasswordDto): Promise<{ message: string }> {
   return apiPost<{ message: string }>('api/Auth/change-password', body);
 }
+
+export async function updateLocation(body: { Latitude: number; Longitude: number }): Promise<{ message: string }> {
+  return apiPost<{ message: string }>('api/Auth/location', body);
+}

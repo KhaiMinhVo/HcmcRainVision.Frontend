@@ -94,6 +94,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, 0);
     return () => clearTimeout(t);
   }, [refreshUser]);
+  useEffect(() => {
+    if (!user || !getToken()) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled) return;
+        const { latitude: Latitude, longitude: Longitude } = pos.coords;
+        authApi.updateLocation({ Latitude, Longitude }).catch(() => {});
+      },
+      () => {},
+      { maximumAge: 60000, timeout: 10000 }
+    );
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const login = useCallback(
     async (username: string, password: string, rememberMe = false) => {
