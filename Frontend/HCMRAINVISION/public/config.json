@@ -1,3 +1,4 @@
 {
-  "apiBaseUrl": "https://hcmcrainvision-backend-r84u.onrender.com"
+  "apiBaseUrl": "https://hcmcrainvision-backend-r84u.onrender.com",
+  "googleMapsApiKey": ""
 }

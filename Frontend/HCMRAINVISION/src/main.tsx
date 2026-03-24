@@ -12,9 +12,12 @@ function loadRuntimeConfig(): Promise<void> {
     const id = setTimeout(() => controller.abort(), CONFIG_TIMEOUT_MS)
     fetch(CONFIG_URL, { signal: controller.signal })
       .then((r) => r.json())
-      .then((data: { apiBaseUrl?: string }) => {
+      .then((data: { apiBaseUrl?: string; googleMapsApiKey?: string }) => {
         if (data?.apiBaseUrl && typeof data.apiBaseUrl === 'string') {
           window.__API_BASE_URL__ = data.apiBaseUrl.replace(/\/$/, '')
+        }
+        if (data?.googleMapsApiKey && typeof data.googleMapsApiKey === 'string') {
+          window.__GOOGLE_MAPS_API_KEY__ = data.googleMapsApiKey
         }
       })
       .catch(() => { /* dùng URL mặc định từ build */ })
