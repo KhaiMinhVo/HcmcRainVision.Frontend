@@ -1,15 +1,14 @@
 /**
  * MapView Component
- * Displays an interactive Google Map with camera markers and rain data visualization.
- * Uses @react-google-maps/api with useJsApiLoader for async API loading.
+ * Displays an interactive map with camera markers and rain data visualization.
+ * Uses imperative Leaflet API (ref + useEffect) to avoid "Map container is
+ * already initialized" when React Strict Mode or routing causes remount.
  */
 
-import { useCallback, useRef, useMemo, useEffect } from 'react';
-import {
-  GoogleMap,
-  HeatmapLayer,
-  useJsApiLoader,
-} from '@react-google-maps/api';
+import { useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { heatLayer } from '@linkurious/leaflet-heat';
 import type { RainDataPoint, CameraInfo } from '../types';
 import type { HeatmapPoint } from '../hooks/useCamerasAndWeather';
 import { HCMC_CENTER, HEATMAP_CONFIG, MAP_CONFIG, RAIN_LEVEL_CONFIG } from '../constants';
@@ -23,13 +22,17 @@ interface MapViewProps {
   showHeatmap?: boolean;
 }
 
-const GOOGLE_MAPS_LIBRARIES: ('visualization' | 'marker')[] = ['visualization', 'marker'];
-
-function getGoogleMapsApiKey(): string {
-  if (typeof window !== 'undefined' && window.__GOOGLE_MAPS_API_KEY__) {
-    return window.__GOOGLE_MAPS_API_KEY__;
-  }
-  return import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '';
+/**
+ * Fix for default marker icons (icon paths broken in bundlers).
+ */
+if (typeof window !== 'undefined') {
+  const iconProto = L.Icon.Default.prototype as unknown as { _getIconUrl?: string };
+  delete iconProto._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  });
 }
 
 const MARKER_COLORS = {
@@ -39,24 +42,113 @@ const MARKER_COLORS = {
   SELECTED: '#3b82f6',
 } as const;
 
-const MARKER_SCALE = {
+const MARKER_RADIUS = {
   [RAIN_LEVEL_CONFIG.NO_RAIN]: 6,
   [RAIN_LEVEL_CONFIG.LIGHT_RAIN]: 10,
   [RAIN_LEVEL_CONFIG.HEAVY_RAIN]: 14,
 } as const;
 
-const MAP_CONTAINER_STYLE = { width: '100%', height: '100%' };
-const MAP_CENTER = { lat: HCMC_CENTER.lat, lng: HCMC_CENTER.lng };
+function addMarkers(
+  map: L.Map,
+  rainData: RainDataPoint[],
+  cameras: CameraInfo[],
+  selectedCameraId: string | null,
+  onCameraClick: (cameraId: string) => void
+): Map<string, L.CircleMarker> {
+  const markers = new Map<string, L.CircleMarker>();
+  const rainDataMap = new Map<string, RainDataPoint>();
+  rainData.forEach((p) => rainDataMap.set(p.id, p));
+  const cameraMap = new Map<string, CameraInfo>();
+  cameras.forEach((c) => cameraMap.set(c.id, c));
 
-const MAP_OPTIONS: google.maps.MapOptions = {
-  mapTypeControl: false,
-  streetViewControl: false,
-  fullscreenControl: false,
-  gestureHandling: 'greedy',
-  clickableIcons: false,
-  // Required by AdvancedMarkerElement; DEMO_MAP_ID works for dev/demo usage.
-  mapId: 'DEMO_MAP_ID',
-};
+  cameras.forEach((camera) => {
+    const rainPoint = rainDataMap.get(camera.id);
+    const rainLevel = rainPoint?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
+    const isSelected = selectedCameraId === camera.id;
+    const color = MARKER_COLORS[rainLevel];
+    const radius = MARKER_RADIUS[rainLevel];
+
+    const marker = L.circleMarker([camera.lat, camera.lng], {
+      radius,
+      fillColor: color,
+      color: isSelected ? MARKER_COLORS.SELECTED : color,
+      weight: isSelected ? 4 : 2,
+      opacity: 0.9,
+      fillOpacity: 0.7,
+      className: 'cursor-pointer transition-all',
+    });
+
+    marker.on('click', () => {
+      onCameraClick(camera.id);
+      map.setView(
+        [camera.lat, camera.lng],
+        Math.max(map.getZoom(), MAP_CONFIG.MIN_ZOOM_ON_SELECT),
+        { animate: true }
+      );
+    });
+
+    const rainStatusClass =
+      rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN
+        ? 'bg-gray-200 text-gray-700'
+        : rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN
+        ? 'bg-yellow-400 text-yellow-900'
+        : 'bg-red-500 text-white';
+    const rainStatusText =
+      rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN
+        ? 'No Rain'
+        : rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN
+        ? 'Light Rain'
+        : 'Heavy Rain';
+
+    const popupContent = document.createElement('div');
+    popupContent.className = 'p-2';
+    popupContent.innerHTML = `
+      <h3 class="font-semibold text-sm mb-1">${camera.name}</h3>
+      <p class="text-xs text-gray-600 mb-2">${camera.ward}, ${camera.district}</p>
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded text-xs ${rainStatusClass}">${rainStatusText}</span>
+      </div>
+      <button class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium view-details-btn">View Details →</button>
+    `;
+    const viewDetailsBtn = popupContent.querySelector('.view-details-btn');
+    if (viewDetailsBtn) {
+      viewDetailsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onCameraClick(camera.id);
+        map.closePopup();
+      });
+    }
+
+    const popup = L.popup({ className: 'custom-popup', maxWidth: 250 }).setContent(popupContent);
+    marker.bindPopup(popup);
+
+    marker.on('mouseover', () => {
+      marker.setStyle({ weight: 4, fillOpacity: 0.9 });
+      marker.openPopup();
+    });
+    marker.on('mouseout', () => {
+      if (selectedCameraId !== camera.id) {
+        marker.setStyle({ weight: 2, fillOpacity: 0.7 });
+      }
+    });
+
+    marker.addTo(map);
+    markers.set(camera.id, marker);
+  });
+
+  if (selectedCameraId) {
+    const selected = cameraMap.get(selectedCameraId);
+    if (selected) {
+      map.setView(
+        [selected.lat, selected.lng],
+        Math.max(map.getZoom(), MAP_CONFIG.MIN_ZOOM_ON_SELECT),
+        { animate: true }
+      );
+    }
+  }
+
+  return markers;
+}
 
 export default function MapView({
   rainData,
@@ -66,205 +158,85 @@ export default function MapView({
   heatmapPoints = [],
   showHeatmap = false,
 }: MapViewProps) {
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: getGoogleMapsApiKey(),
-    libraries: GOOGLE_MAPS_LIBRARIES,
-  });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const heatLayerRef = useRef<L.Layer | null>(null);
 
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
-  const markerListenersRef = useRef<google.maps.MapsEventListener[]>([]);
-  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
-
-  const onMapLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map;
-  }, []);
-
-  const onMapUnmount = useCallback(() => {
-    markerListenersRef.current.forEach((listener) => listener.remove());
-    markerListenersRef.current = [];
-    markersRef.current.forEach((marker) => {
-      marker.map = null;
-    });
-    markersRef.current = [];
-    if (infoWindowRef.current) {
-      infoWindowRef.current.close();
-      infoWindowRef.current = null;
-    }
-    mapRef.current = null;
-  }, []);
-
-  // Build rainData lookup: cameraId → RainDataPoint
-  const rainDataMap = useMemo(() => {
-    const m = new Map<string, RainDataPoint>();
-    rainData.forEach((p) => m.set(p.id, p));
-    return m;
-  }, [rainData]);
-
-  const handleMarkerClick = useCallback(
-    (cameraId: string, lat: number, lng: number) => {
-      onCameraClick(cameraId);
-      if (mapRef.current) {
-        mapRef.current.panTo({ lat, lng });
-        const zoom = mapRef.current.getZoom() ?? MAP_CONFIG.DEFAULT_ZOOM;
-        if (zoom < MAP_CONFIG.MIN_ZOOM_ON_SELECT) {
-          mapRef.current.setZoom(MAP_CONFIG.MIN_ZOOM_ON_SELECT);
-        }
-      }
-    },
-    [onCameraClick]
-  );
-
-  const buildInfoWindowContent = useCallback(
-    (camera: CameraInfo, rainLevel: number) => {
-      const rainStatusClass =
-        rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN
-          ? 'bg-gray-200 text-gray-700'
-          : rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN
-          ? 'bg-yellow-400 text-yellow-900'
-          : 'bg-red-500 text-white';
-      const rainStatusText =
-        rainLevel === RAIN_LEVEL_CONFIG.NO_RAIN
-          ? 'No Rain'
-          : rainLevel === RAIN_LEVEL_CONFIG.LIGHT_RAIN
-          ? 'Light Rain'
-          : 'Heavy Rain';
-
-      return `
-        <div style="padding: 8px; min-width: 160px;">
-          <h3 style="font-weight: 600; font-size: 14px; margin: 0 0 4px 0;">${camera.name}</h3>
-          <p style="font-size: 12px; color: #4b5563; margin: 0 0 8px 0;">${camera.ward}, ${camera.district}</p>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span class="${rainStatusClass}" style="padding: 2px 8px; border-radius: 6px; font-size: 12px;">
-              ${rainStatusText}
-            </span>
-          </div>
-          <button id="map-view-details-${camera.id}" style="font-size: 12px; color: #2563eb; font-weight: 500; border: none; background: transparent; cursor: pointer; padding: 0;">
-            View Details →
-          </button>
-        </div>
-      `;
-    },
-    []
-  );
-
+  // Create map once on mount; cleanup on unmount
   useEffect(() => {
-    const map = mapRef.current;
-    if (!isLoaded || !map || !google.maps.marker?.AdvancedMarkerElement) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    markerListenersRef.current.forEach((listener) => listener.remove());
-    markerListenersRef.current = [];
-    markersRef.current.forEach((marker) => {
-      marker.map = null;
+    // Guard: Leaflet leaves _leaflet_id on the container; if it exists, container was already used
+    if ((container as unknown as { _leaflet_id?: number })._leaflet_id != null) {
+      return;
+    }
+
+    const map = L.map(container, {
+      center: [HCMC_CENTER.lat, HCMC_CENTER.lng],
+      zoom: MAP_CONFIG.DEFAULT_ZOOM,
+      scrollWheelZoom: true,
     });
-    markersRef.current = [];
 
-    const infoWindow = infoWindowRef.current ?? new google.maps.InfoWindow();
-    infoWindowRef.current = infoWindow;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
 
-    cameras.forEach((camera) => {
-      const rainPoint = rainDataMap.get(camera.id);
-      const rainLevel = rainPoint?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
-      const isSelected = selectedCameraId === camera.id;
-      const color = MARKER_COLORS[rainLevel];
-      const scale = MARKER_SCALE[rainLevel];
-
-      const markerNode = document.createElement('div');
-      markerNode.style.width = `${scale * 2}px`;
-      markerNode.style.height = `${scale * 2}px`;
-      markerNode.style.borderRadius = '50%';
-      markerNode.style.backgroundColor = color;
-      markerNode.style.opacity = '0.75';
-      markerNode.style.border = `${isSelected ? 4 : 2}px solid ${isSelected ? MARKER_COLORS.SELECTED : color}`;
-      markerNode.style.boxSizing = 'border-box';
-      markerNode.style.cursor = 'pointer';
-
-      const marker = new google.maps.marker.AdvancedMarkerElement({
-        map,
-        position: { lat: camera.lat, lng: camera.lng },
-        content: markerNode,
-        title: camera.name,
-      });
-
-      const clickListener = marker.addListener('gmp-click', () => {
-        handleMarkerClick(camera.id, camera.lat, camera.lng);
-      });
-      markerListenersRef.current.push(clickListener);
-
-      markerNode.addEventListener('mouseenter', () => {
-        infoWindow.setContent(buildInfoWindowContent(camera, rainLevel));
-        infoWindow.open({ map, anchor: marker });
-
-        const id = `map-view-details-${camera.id}`;
-        // Wait for InfoWindow DOM mount before binding click handler
-        setTimeout(() => {
-          const btn = document.getElementById(id);
-          if (btn) {
-            btn.onclick = (e) => {
-              e.preventDefault();
-              onCameraClick(camera.id);
-              infoWindow.close();
-            };
-          }
-        }, 0);
-      });
-
-      markerNode.addEventListener('mouseleave', () => {
-        infoWindow.close();
-      });
-
-      markersRef.current.push(marker);
-    });
+    mapRef.current = map;
 
     return () => {
-      markerListenersRef.current.forEach((listener) => listener.remove());
-      markerListenersRef.current = [];
-      markersRef.current.forEach((marker) => {
-        marker.map = null;
-      });
-      markersRef.current = [];
-      infoWindow.close();
+      map.remove();
+      mapRef.current = null;
     };
-  }, [isLoaded, cameras, rainDataMap, selectedCameraId, handleMarkerClick, onCameraClick, buildInfoWindowContent]);
+  }, []);
 
-  if (loadError) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-        <p className="text-red-600 text-sm">Không tải được Google Maps. Kiểm tra API key.</p>
-      </div>
-    );
-  }
+  // Update markers when data or selection changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
 
-  if (!isLoaded) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-        <p className="text-gray-500 text-sm">Đang tải bản đồ...</p>
-      </div>
-    );
-  }
+    const markersRef = new Map<string, L.CircleMarker>();
+    const markers = addMarkers(map, rainData, cameras, selectedCameraId, onCameraClick);
+    markers.forEach((m, id) => markersRef.set(id, m));
+
+    return () => {
+      markersRef.forEach((marker) => map.removeLayer(marker));
+    };
+  }, [rainData, cameras, selectedCameraId, onCameraClick]);
+
+  // Heatmap layer: add/remove when showHeatmap or heatmapPoints change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
+    }
+
+    if (showHeatmap && heatmapPoints.length > 0) {
+      const layer = heatLayer(heatmapPoints, {
+        radius: HEATMAP_CONFIG.RADIUS,
+        blur: HEATMAP_CONFIG.BLUR,
+        max: HEATMAP_CONFIG.MAX,
+      });
+      layer.addTo(map);
+      heatLayerRef.current = layer;
+    }
+
+    return () => {
+      if (heatLayerRef.current) {
+        map.removeLayer(heatLayerRef.current);
+        heatLayerRef.current = null;
+      }
+    };
+  }, [showHeatmap, heatmapPoints]);
 
   return (
-    <GoogleMap
-      mapContainerStyle={MAP_CONTAINER_STYLE}
-      center={MAP_CENTER}
-      zoom={MAP_CONFIG.DEFAULT_ZOOM}
-      options={MAP_OPTIONS}
-      onLoad={onMapLoad}
-      onUnmount={onMapUnmount}
-    >
-      {showHeatmap && heatmapPoints.length > 0 && (
-        <HeatmapLayer
-          data={heatmapPoints.map((p) => ({
-            location: new google.maps.LatLng(p.lat, p.lng),
-            weight: p.weight,
-          }))}
-          options={{
-            radius: HEATMAP_CONFIG.RADIUS,
-            opacity: 0.7,
-            maxIntensity: HEATMAP_CONFIG.MAX,
-          }}
-        />
-      )}
-    </GoogleMap>
+    <div
+      ref={containerRef}
+      className="w-full h-full relative z-0"
+      style={{ minHeight: 300 }}
+    />
   );
 }

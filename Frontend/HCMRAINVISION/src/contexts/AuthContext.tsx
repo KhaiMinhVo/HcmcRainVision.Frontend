@@ -98,33 +98,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!user || !getToken()) return;
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
     let cancelled = false;
-    const requestLocation = () => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (cancelled) return;
-          const { latitude: Latitude, longitude: Longitude } = pos.coords;
-          authApi.updateLocation({ Latitude, Longitude }).catch(() => {});
-        },
-        () => {},
-        { maximumAge: 60000, timeout: 10000 }
-      );
-    };
-
-    // Avoid unnecessary geolocation calls when user already denied permission.
-    if (navigator.permissions?.query) {
-      navigator.permissions
-        .query({ name: 'geolocation' })
-        .then((status) => {
-          if (cancelled) return;
-          if (status.state === 'denied') return;
-          requestLocation();
-        })
-        .catch(() => {
-          requestLocation();
-        });
-    } else {
-      requestLocation();
-    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled) return;
+        const { latitude: Latitude, longitude: Longitude } = pos.coords;
+        authApi.updateLocation({ Latitude, Longitude }).catch(() => {});
+      },
+      () => {},
+      { maximumAge: 60000, timeout: 10000 }
+    );
     return () => { cancelled = true; };
   }, [user?.id]);
 

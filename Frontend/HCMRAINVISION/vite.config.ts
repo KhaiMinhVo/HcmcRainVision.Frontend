@@ -63,7 +63,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
-          'map-vendor': ['@react-google-maps/api'],
+          'map-vendor': ['leaflet'],
           'chart-vendor': ['recharts'],
         },
       },

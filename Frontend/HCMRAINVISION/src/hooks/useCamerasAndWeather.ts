@@ -7,12 +7,8 @@ import * as weatherApi from '../services/weatherApi';
 import * as locationApi from '../services/locationApi';
 import type { CameraInfo, RainDataPoint } from '../types';
 
-/** Heatmap point source (convert to LatLng in MapView after Google API loads) */
-export type HeatmapPoint = {
-  lat: number;
-  lng: number;
-  weight: number;
-};
+/** [lat, lng, intensity] for Leaflet heat layer */
+export type HeatmapPoint = [number, number, number];
 
 export interface UseCamerasAndWeatherResult {
   cameras: CameraInfo[];
@@ -51,11 +47,7 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
       });
       setCameras(cameraList);
       setRainData(latest.map(weatherApi.mapLatestToRainPoint));
-      setHeatmapPoints(heatmap.map((p) => ({
-        lat: p.Lat,
-        lng: p.Lng,
-        weight: p.Intensity,
-      })));
+      setHeatmapPoints(heatmap.map((p) => [p.Lat, p.Lng, p.Intensity]));
       const fallbackDistricts = Array.from(districtSet).sort();
       setDistricts(districtsFromApi.length > 0 ? districtsFromApi.sort() : fallbackDistricts);
     } catch (e) {
