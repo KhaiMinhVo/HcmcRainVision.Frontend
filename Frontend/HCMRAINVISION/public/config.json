@@ -1,4 +1,4 @@
 {
-  "apiBaseUrl": "https://hcmcrainvision-backend-r84u.onrender.com",
+  "apiBaseUrl": "http://localhost:5057",
   "googleMapsApiKey": ""
 }
