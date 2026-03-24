@@ -64,6 +64,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
           'map-vendor': ['leaflet'],
+          'chart-vendor': ['recharts'],
         },
       },
     },
