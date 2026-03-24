@@ -72,7 +72,7 @@ export default function ChatbotWidget() {
       {/* Floating button */}
       <button
         onClick={() => setIsOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-blue-600 shadow-lg hover:bg-blue-700 active:scale-95 transition-all duration-200 flex items-center justify-center text-white"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/35 transition-all duration-200 hover:from-sky-600 hover:to-blue-700 hover:shadow-xl active:scale-95"
         aria-label="Mở chatbot thời tiết"
         title="Hỏi về thời tiết"
       >
@@ -90,8 +90,9 @@ export default function ChatbotWidget() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
-          style={{ maxHeight: '70vh' }}>
+        <div
+          className="fixed bottom-24 right-6 z-50 flex w-80 max-h-[70vh] animate-scale-in flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl sm:w-96"
+        >
 
           {/* Header */}
           <div className="bg-blue-600 px-4 py-3 flex items-center gap-3">

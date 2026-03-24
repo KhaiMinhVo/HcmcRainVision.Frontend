@@ -10,6 +10,8 @@ import CameraList from '../components/CameraList';
 import CameraDetailPanel from '../components/CameraDetailPanel';
 import FavoritesSection from '../components/FavoritesSection';
 import CheckRouteDrawer from '../components/CheckRouteDrawer';
+import HomeLoadingSkeleton from '../components/HomeLoadingSkeleton';
+import { Button } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useCamerasAndWeather } from '../hooks/useCamerasAndWeather';
 import type { RainDataPoint, RainFilter } from '../types';
@@ -79,24 +81,16 @@ export default function Home() {
   };
 
   if (loading && cameras.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Đang tải dữ liệu...</p>
-      </div>
-    );
+    return <HomeLoadingSkeleton />;
   }
 
   if (error && cameras.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 px-4">
-        <p className="text-red-600 text-center">{error}</p>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
+      <div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-slate-50 px-4 [background-image:radial-gradient(circle_at_1px_1px,rgb(148_163_184_/_0.1)_1px,transparent_0)] [background-size:20px_20px]">
+        <p className="max-w-md text-center text-red-600 animate-fade-in">{error}</p>
+        <Button type="button" onClick={() => refetch()}>
           Thử lại
-        </button>
+        </Button>
       </div>
     );
   }

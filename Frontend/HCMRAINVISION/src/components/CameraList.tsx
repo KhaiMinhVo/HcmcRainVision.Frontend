@@ -162,8 +162,8 @@ export default function CameraList({
               return (
                 <div
                   key={camera.id}
-                  className={`relative w-full p-4 pr-10 text-left hover:bg-gray-50 transition-colors ${
-                    isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                  className={`relative w-full p-4 pr-10 text-left transition-all duration-200 hover:-translate-y-px hover:bg-gray-50 hover:shadow-sm ${
+                    isSelected ? 'border-l-4 border-blue-500 bg-blue-50 shadow-sm' : ''
                   }`}
                 >
                   <div
@@ -226,7 +226,7 @@ export default function CameraList({
                           alert(err?.message ?? 'Thao tác thất bại.');
                         });
                       }}
-                      className="absolute top-4 right-4 p-1 rounded text-gray-400 hover:text-red-500"
+                      className="absolute top-4 right-4 rounded-md p-1 text-gray-400 transition-all duration-200 hover:scale-110 hover:text-red-500 active:scale-95"
                       aria-label={favorited ? 'Bỏ yêu thích' : 'Yêu thích'}
                     >
                       <svg

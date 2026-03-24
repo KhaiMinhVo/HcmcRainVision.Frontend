@@ -45,7 +45,7 @@ export default function NotificationDropdown() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+        className="relative rounded-lg p-2 text-gray-600 transition-all duration-200 hover:bg-gray-100 hover:text-gray-900 active:scale-95"
         aria-label="Thông báo"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,7 +64,7 @@ export default function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-96 max-h-[80vh] bg-white rounded-xl shadow-sm border border-gray-200 z-[1000] flex flex-col">
+        <div className="absolute right-0 z-[1000] mt-2 flex max-h-[80vh] w-96 animate-slide-up flex-col rounded-xl border border-gray-200 bg-white shadow-lg">
           <div className="p-3 border-b border-gray-200 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">Thông báo</h3>
             {unreadCount > 0 && (
@@ -99,7 +99,7 @@ export default function NotificationDropdown() {
                     <button
                       type="button"
                       onClick={() => markAsRead(n.id)}
-                      className={`w-full p-3 text-left hover:bg-gray-50 ${!n.read ? 'bg-blue-50/50' : ''}`}
+                      className={`w-full p-3 text-left transition-colors duration-150 hover:bg-gray-50 ${!n.read ? 'border-l-2 border-sky-500 bg-sky-50/50' : ''}`}
                     >
                       <div className="flex justify-between gap-2">
                         <span className="font-medium text-gray-900 text-sm">

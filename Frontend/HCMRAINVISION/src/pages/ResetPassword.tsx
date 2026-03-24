@@ -3,8 +3,11 @@
  */
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth, getAuthErrorMessage } from '../contexts/AuthContext';
 import { validate } from '../lib/validation';
+import AuthPageShell from '../components/AuthPageShell';
+import { Button, Input } from '../components/ui';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -37,7 +40,14 @@ export default function ResetPassword() {
     try {
       await resetPassword(token, newPassword);
       setSuccess(true);
-      setTimeout(() => navigate('/login', { replace: true, state: { message: 'Đổi mật khẩu thành công! Hãy đăng nhập lại.' } }), 2000);
+      setTimeout(
+        () =>
+          navigate('/login', {
+            replace: true,
+            state: { message: 'Đổi mật khẩu thành công! Hãy đăng nhập lại.' },
+          }),
+        2000,
+      );
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {
@@ -48,79 +58,75 @@ export default function ResetPassword() {
   if (!token && !error) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white shadow-lg rounded-xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
-            Đặt lại mật khẩu
-          </h1>
-          <p className="text-gray-600 text-center text-sm mb-6">
-            Nhập mật khẩu mới (ít nhất 6 ký tự).
-          </p>
-
-          {success ? (
-            <div className="p-4 rounded-lg bg-green-50 text-green-800 text-sm text-center">
-              Đổi mật khẩu thành công! Đang chuyển đến trang đăng nhập...
-            </div>
-          ) : (
-            <>
-              {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
-                  {error}
-                </div>
-              )}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Mật khẩu mới
-                  </label>
-                  <input
-                    id="newPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Xác nhận mật khẩu
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading || !token}
-                  className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
-                </button>
-              </form>
-            </>
-          )}
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Quay lại đăng nhập
-            </Link>
-          </p>
-        </div>
-        <p className="mt-4 text-center">
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
+    <AuthPageShell
+      title="Đặt lại mật khẩu"
+      subtitle="Nhập mật khẩu mới (ít nhất 6 ký tự)."
+      footer={
+        <p className="mt-4 text-center animate-fade-in">
+          <Link to="/" className="text-sm text-gray-500 transition-colors hover:text-gray-800">
             ← Quay lại trang chủ
           </Link>
         </p>
-      </div>
-    </div>
+      }
+    >
+      {success ? (
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center text-sm text-emerald-800 animate-fade-in">
+          <CheckCircle2 className="h-10 w-10 text-emerald-600" aria-hidden />
+          <p>Đổi mật khẩu thành công! Đang chuyển đến trang đăng nhập...</p>
+        </div>
+      ) : (
+        <>
+          {error && (
+            <div className="mb-4 flex gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 animate-fade-in">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" aria-hidden />
+              <span>{error}</span>
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="newPassword" className="mb-1.5 block text-sm font-medium text-gray-700">
+                Mật khẩu mới
+              </label>
+              <Input
+                id="newPassword"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                leftIcon={<Lock className="h-4 w-4" />}
+                showPasswordToggle
+                placeholder="••••••••"
+                className="py-2.5 pl-10 pr-10"
+              />
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-gray-700">
+                Xác nhận mật khẩu
+              </label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                leftIcon={<Lock className="h-4 w-4" />}
+                showPasswordToggle
+                placeholder="••••••••"
+                className="py-2.5 pl-10 pr-10"
+              />
+            </div>
+            <Button type="submit" className="w-full py-2.5" loading={loading} disabled={!token}>
+              Đặt lại mật khẩu
+            </Button>
+          </form>
+        </>
+      )}
+
+      <p className="mt-6 text-center text-sm text-gray-600">
+        <Link to="/login" className="font-semibold text-sky-600 transition-colors hover:text-sky-700">
+          Quay lại đăng nhập
+        </Link>
+      </p>
+    </AuthPageShell>
   );
 }

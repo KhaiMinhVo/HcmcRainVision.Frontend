@@ -3,6 +3,7 @@
  */
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { FavoritesProvider } from './contexts/FavoritesContext';
 import { NotificationsProvider } from './contexts/NotificationsContext';
@@ -60,6 +61,21 @@ function App() {
           </NotificationsProvider>
         </FavoritesProvider>
       </AuthProvider>
+      <Toaster
+        position="top-center"
+        gutter={12}
+        toastOptions={{
+          duration: 4000,
+          className: 'animate-fade-in !rounded-xl !border !border-gray-200 !bg-white !text-gray-900 !shadow-lg',
+          style: { maxWidth: 'min(100vw - 2rem, 24rem)' },
+          success: {
+            iconTheme: { primary: '#059669', secondary: '#fff' },
+          },
+          error: {
+            iconTheme: { primary: '#dc2626', secondary: '#fff' },
+          },
+        }}
+      />
       <ChatbotWidget />
     </BrowserRouter>
   );

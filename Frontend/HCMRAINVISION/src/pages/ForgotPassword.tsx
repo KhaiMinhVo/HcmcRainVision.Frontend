@@ -3,8 +3,11 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth, getAuthErrorMessage } from '../contexts/AuthContext';
 import { validate } from '../lib/validation';
+import AuthPageShell from '../components/AuthPageShell';
+import { Button, Input } from '../components/ui';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -33,65 +36,58 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white shadow-lg rounded-xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
-            Quên mật khẩu
-          </h1>
-          <p className="text-gray-600 text-center text-sm mb-6">
-            Nhập email đăng ký, chúng tôi sẽ gửi link đặt lại mật khẩu.
-          </p>
-
-          {success ? (
-            <div className="p-4 rounded-lg bg-green-50 text-green-800 text-sm text-center">
-              Vui lòng kiểm tra email để đặt lại mật khẩu.
-            </div>
-          ) : (
-            <>
-              {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
-                  {error}
-                </div>
-              )}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="email@example.com"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Đang gửi...' : 'Gửi link đặt lại mật khẩu'}
-                </button>
-              </form>
-            </>
-          )}
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Quay lại đăng nhập
-            </Link>
-          </p>
-        </div>
-        <p className="mt-4 text-center">
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
+    <AuthPageShell
+      title="Quên mật khẩu"
+      subtitle="Nhập email đăng ký, chúng tôi sẽ gửi link đặt lại mật khẩu."
+      footer={
+        <p className="mt-4 text-center animate-fade-in">
+          <Link to="/" className="text-sm text-gray-500 transition-colors hover:text-gray-800">
             ← Quay lại trang chủ
           </Link>
         </p>
-      </div>
-    </div>
+      }
+    >
+      {success ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center text-sm text-emerald-800 animate-fade-in">
+          <CheckCircle2 className="h-12 w-12 text-emerald-600" aria-hidden />
+          <p className="leading-relaxed">Vui lòng kiểm tra email để đặt lại mật khẩu.</p>
+        </div>
+      ) : (
+        <>
+          {error && (
+            <div className="mb-4 flex gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 animate-fade-in">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" aria-hidden />
+              <span>{error}</span>
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                leftIcon={<Mail className="h-4 w-4" />}
+                placeholder="email@example.com"
+                className="py-2.5 pl-10 pr-3"
+              />
+            </div>
+            <Button type="submit" className="w-full py-2.5" loading={loading}>
+              Gửi link đặt lại mật khẩu
+            </Button>
+          </form>
+        </>
+      )}
+
+      <p className="mt-6 text-center text-sm text-gray-600">
+        <Link to="/login" className="font-semibold text-sky-600 transition-colors hover:text-sky-700">
+          Quay lại đăng nhập
+        </Link>
+      </p>
+    </AuthPageShell>
   );
 }

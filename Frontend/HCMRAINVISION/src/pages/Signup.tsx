@@ -3,8 +3,11 @@
  */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { User, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth, getAuthErrorMessage } from '../contexts/AuthContext';
 import { validate } from '../lib/validation';
+import AuthPageShell from '../components/AuthPageShell';
+import { Button, Input } from '../components/ui';
 
 export default function Signup() {
   const [username, setUsername] = useState('');
@@ -45,101 +48,98 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white shadow-sm rounded-xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
-            Đăng ký
-          </h1>
-          <p className="text-gray-600 text-center text-sm mb-6">
-            HCMC Rain Detection System
-          </p>
-
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                Tên đăng nhập
-              </label>
-              <input
-                id="username"
-                type="text"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Tên đăng nhập"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="email@example.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Mật khẩu
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="••••••••"
-              />
-            </div>
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Xác nhận mật khẩu
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="••••••••"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Đang đăng ký...' : 'Đăng ký'}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Đã có tài khoản?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Đăng nhập
-            </Link>
-          </p>
-        </div>
-        <p className="mt-4 text-center">
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
+    <AuthPageShell
+      title="Đăng ký"
+      subtitle="HCMC Rain Detection System"
+      footer={
+        <p className="mt-4 text-center animate-fade-in">
+          <Link to="/" className="text-sm text-gray-500 transition-colors hover:text-gray-800">
             ← Quay lại trang chủ
           </Link>
         </p>
-      </div>
-    </div>
+      }
+    >
+      {error && (
+        <div className="mb-4 flex gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 animate-fade-in">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" aria-hidden />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Tên đăng nhập
+          </label>
+          <Input
+            id="username"
+            type="text"
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            leftIcon={<User className="h-4 w-4" />}
+            placeholder="Tên đăng nhập"
+            className="py-2.5 pl-10 pr-3"
+          />
+        </div>
+        <div>
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            leftIcon={<Mail className="h-4 w-4" />}
+            placeholder="email@example.com"
+            className="py-2.5 pl-10 pr-3"
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Mật khẩu
+          </label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            leftIcon={<Lock className="h-4 w-4" />}
+            showPasswordToggle
+            placeholder="••••••••"
+            className="py-2.5 pl-10 pr-10"
+          />
+        </div>
+        <div>
+          <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Xác nhận mật khẩu
+          </label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            leftIcon={<Lock className="h-4 w-4" />}
+            showPasswordToggle
+            placeholder="••••••••"
+            className="py-2.5 pl-10 pr-10"
+          />
+        </div>
+        <Button type="submit" className="w-full py-2.5" loading={loading}>
+          Đăng ký
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-gray-600">
+        Đã có tài khoản?{' '}
+        <Link to="/login" className="font-semibold text-sky-600 transition-colors hover:text-sky-700">
+          Đăng nhập
+        </Link>
+      </p>
+    </AuthPageShell>
   );
 }
