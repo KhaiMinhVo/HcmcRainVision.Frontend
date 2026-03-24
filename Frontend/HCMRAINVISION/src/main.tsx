@@ -25,7 +25,10 @@ function loadRuntimeConfig(): Promise<void> {
   })
 }
 
-loadRuntimeConfig().then(() => {
+// Chi load config.json trong production (GitHub Pages).
+// Khi dev local (npm run dev), PROD = false → dung VITE_API_BASE_URL tu .env.local
+const startup = import.meta.env.PROD ? loadRuntimeConfig() : Promise.resolve()
+startup.then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />

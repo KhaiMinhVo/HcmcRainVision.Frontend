@@ -89,6 +89,8 @@ export interface WeatherLatestItemDto {
   IsRaining: boolean;
   Confidence: number;
   TimeAgo: string;
+  /** ISO 8601 timestamp của lần scan gần nhất */
+  Timestamp: string;
 }
 
 /** GET /api/weather/heatmap item */

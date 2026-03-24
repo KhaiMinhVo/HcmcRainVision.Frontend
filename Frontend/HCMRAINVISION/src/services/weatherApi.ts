@@ -19,6 +19,7 @@ function rawToWeatherLatestItem(raw: Record<string, unknown>): WeatherLatestItem
     IsRaining: Boolean(raw.isRaining ?? raw.IsRaining),
     Confidence: Number(raw.confidence ?? raw.Confidence ?? 0),
     TimeAgo: String((raw.timeAgo ?? raw.TimeAgo) ?? ''),
+    Timestamp: String((raw.timestamp ?? raw.Timestamp) ?? ''),
   };
 }
 
@@ -53,7 +54,7 @@ export async function reportIncorrectPrediction(body: ReportDto): Promise<{ mess
   return apiPost('api/Weather/report', body);
 }
 
-/** POST api/Weather/test-ai – upload image for AI prediction test (multipart). */
+/** POST api/Weather/test-ai  upload image for AI prediction test (multipart). */
 export async function testAi(imageFile: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('ImageFile', imageFile);
@@ -71,6 +72,6 @@ export function mapLatestToRainPoint(item: WeatherLatestItemDto): RainDataPoint 
     lat: item.Latitude,
     lng: item.Longitude,
     rainLevel,
-    timestamp: item.TimeAgo,
+    timestamp: item.Timestamp || item.TimeAgo, // ?u tiên ISO timestamp, fallback sang TimeAgo
   };
 }

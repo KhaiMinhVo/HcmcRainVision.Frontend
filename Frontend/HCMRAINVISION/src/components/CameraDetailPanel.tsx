@@ -149,9 +149,15 @@ export default function CameraDetailPanel({
   const rainLevel = rainData?.rainLevel ?? RAIN_LEVEL_CONFIG.NO_RAIN;
   const rainStatus = getRainStatus(rainLevel);
   const favorited = isAuthenticated && effectiveCamera && isFavorite(effectiveCamera.id);
-  const lastUpdate = rainData?.timestamp
-    ? new Date(rainData.timestamp).toLocaleString('vi-VN')
-    : 'N/A';
+  const lastUpdate = (() => {
+    if (!rainData?.timestamp) return 'Chưa có dữ liệu';
+    const d = new Date(rainData.timestamp);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    // Fallback: nếu không parse được (ví dụ "5 phút trước") hiển thị trực tiếp
+    return rainData.timestamp;
+  })();
   const displayName = effectiveCamera?.name ?? detail?.Name ?? 'Camera';
   /** Link ảnh camera trực tiếp từ API (StreamUrl) – không cần backend proxy */
   const imageUrl = detail?.StreamUrl ?? camera?.streamUrl ?? undefined;
