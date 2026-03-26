@@ -7,7 +7,7 @@ import { API_TIMEOUT_MS } from '../constants';
 /** Build-time default (fallback khi không có config runtime). */
 const defaultBaseURL =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
-  'https://le-invocable-celsa.ngrok-free.dev';
+  'https://prointegration-continuous-graham.ngrok-free.dev';
 
 /** Base URL: ưu tiên config runtime (config.json) để deploy trỏ đúng backend, tránh timeout. */
 function getBaseURL(): string {
