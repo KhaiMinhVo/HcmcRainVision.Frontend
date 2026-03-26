@@ -32,10 +32,10 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
     setError(null);
     setLoading(true);
     try {
-      const [camerasRaw, wards, latest, heatmap, districtsFromApi] = await Promise.all([
+      const [camerasRaw, wards, rainingCameras, heatmap, districtsFromApi] = await Promise.all([
         cameraApi.getCameras(),
         locationApi.getWards(),
-        weatherApi.getLatestWeather(),
+        weatherApi.getRainingCameras(30), // Get cameras that are raining in last 30 minutes
         weatherApi.getRainHeatmap(),
         locationApi.getDistricts().catch(() => [] as string[]),
       ]);
@@ -45,8 +45,30 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
       cameraList.forEach((c) => {
         if (c.district) districtSet.add(c.district);
       });
+      
+      // Build rain data: map raining cameras to rainPoints, other cameras = no rain
+      const rainingCameraMap = new Map<string, typeof rainingCameras[0]>();
+      rainingCameras.forEach((rc) => {
+        rainingCameraMap.set(rc.CameraId, rc);
+      });
+      
+      const allRainData: RainDataPoint[] = cameraList.map((camera) => {
+        const rainingCamera = rainingCameraMap.get(camera.id);
+        if (rainingCamera) {
+          return weatherApi.mapRainingCameraToRainPoint(rainingCamera);
+        }
+        // No rain for this camera
+        return {
+          id: camera.id,
+          lat: camera.lat,
+          lng: camera.lng,
+          rainLevel: 0,
+          timestamp: new Date().toISOString(),
+        };
+      });
+      
       setCameras(cameraList);
-      setRainData(latest.map(weatherApi.mapLatestToRainPoint));
+      setRainData(allRainData);
       setHeatmapPoints(heatmap.map((p) => [p.Lat, p.Lng, p.Intensity]));
       const fallbackDistricts = Array.from(districtSet).sort();
       setDistricts(districtsFromApi.length > 0 ? districtsFromApi.sort() : fallbackDistricts);
@@ -64,11 +86,32 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
     // Auto-refresh weather data every 30 seconds (cameras & wards less frequently)
     const weatherInterval = setInterval(async () => {
       try {
-        const [latest, heatmap] = await Promise.all([
-          weatherApi.getLatestWeather(),
+        const [rainingCameras, heatmap] = await Promise.all([
+          weatherApi.getRainingCameras(30),
           weatherApi.getRainHeatmap(),
         ]);
-        setRainData(latest.map(weatherApi.mapLatestToRainPoint));
+        
+        // Rebuild rain data with fresh data
+        setRainData((prevCameras) => {
+          const rainingCameraMap = new Map<string, typeof rainingCameras[0]>();
+          rainingCameras.forEach((rc) => {
+            rainingCameraMap.set(rc.CameraId, rc);
+          });
+          
+          return prevCameras.map((rainPoint) => {
+            const rainingCamera = rainingCameraMap.get(rainPoint.id);
+            if (rainingCamera) {
+              return weatherApi.mapRainingCameraToRainPoint(rainingCamera);
+            }
+            // No rain for this camera
+            return {
+              ...rainPoint,
+              rainLevel: 0,
+              timestamp: new Date().toISOString(),
+            };
+          });
+        });
+        
         setHeatmapPoints(heatmap.map((p) => [p.Lat, p.Lng, p.Intensity]));
       } catch (e) {
         if (typeof console !== 'undefined' && console.error) console.error('[useCamerasAndWeather] weather refresh failed:', e);

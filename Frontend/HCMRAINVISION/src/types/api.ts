@@ -100,6 +100,19 @@ export interface HeatmapPointDto {
   Intensity: number;
 }
 
+/** GET /api/weather/raining-cameras item */
+export interface RainingCameraDto {
+  CameraId: string;
+  CameraName: string;
+  Latitude: number;
+  Longitude: number;
+  WardId?: string | null;
+  CameraStatus?: string | null;
+  Confidence: number;
+  LastRainAtUtc: string;
+  ImageUrl?: string | null;
+}
+
 /** POST /api/camera (Admin) */
 export interface CreateCameraRequest {
   Id: string;
