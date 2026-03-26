@@ -12,7 +12,7 @@ import type { RainDataPoint, RainLevel } from '../types';
 
 function rawToWeatherLatestItem(raw: Record<string, unknown>): WeatherLatestItemDto {
   return {
-    Id: Number(raw.id ?? raw.Id ?? 0),
+    Id: String((raw.cameraId ?? raw.CameraId) ?? ''), // Use CameraId for mapping, not WeatherLog.Id
     CameraId: String((raw.cameraId ?? raw.CameraId) ?? ''),
     Latitude: Number(raw.latitude ?? raw.Latitude ?? 0),
     Longitude: Number(raw.longitude ?? raw.Longitude ?? 0),
@@ -54,7 +54,7 @@ export async function reportIncorrectPrediction(body: ReportDto): Promise<{ mess
   return apiPost('api/Weather/report', body);
 }
 
-/** POST api/Weather/test-ai  upload image for AI prediction test (multipart). */
+/** POST api/Weather/test-ai ï¿½ upload image for AI prediction test (multipart). */
 export async function testAi(imageFile: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('ImageFile', imageFile);
@@ -72,6 +72,6 @@ export function mapLatestToRainPoint(item: WeatherLatestItemDto): RainDataPoint 
     lat: item.Latitude,
     lng: item.Longitude,
     rainLevel,
-    timestamp: item.Timestamp || item.TimeAgo, // ?u tiên ISO timestamp, fallback sang TimeAgo
+    timestamp: item.Timestamp || item.TimeAgo, // ?u tiï¿½n ISO timestamp, fallback sang TimeAgo
   };
 }
