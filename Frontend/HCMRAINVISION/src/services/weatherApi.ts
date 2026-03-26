@@ -51,8 +51,12 @@ export async function getRainingCameras(minutes = 30): Promise<RainingCameraDto[
     TimeLimitUtc: string;
     Data: unknown[];
   }>(`api/Weather/raining-cameras?minutes=${minutes}`, { retries: 2 });
-  if (!response || !Array.isArray(response.Data)) return [];
-  return response.Data.map((item) => {
+  console.debug('[weatherApi.getRainingCameras] raw response:', response);
+  if (!response || !Array.isArray(response.Data)) {
+    console.warn('[weatherApi.getRainingCameras] invalid response:', response);
+    return [];
+  }
+  const mapped = response.Data.map((item) => {
     const raw = item as Record<string, unknown>;
     return {
       CameraId: String(raw.cameraId ?? raw.CameraId ?? ''),
@@ -66,6 +70,8 @@ export async function getRainingCameras(minutes = 30): Promise<RainingCameraDto[
       ImageUrl: (raw.imageUrl ?? raw.ImageUrl) as string | null | undefined,
     };
   });
+  console.debug('[weatherApi.getRainingCameras] mapped:', mapped.length, mapped);
+  return mapped;
 }
 
 export function mapRainingCameraToRainPoint(item: RainingCameraDto): RainDataPoint {

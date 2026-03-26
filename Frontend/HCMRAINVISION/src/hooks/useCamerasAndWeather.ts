@@ -52,9 +52,14 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
         rainingCameraMap.set(rc.CameraId, rc);
       });
       
+      console.debug('[useCamerasAndWeather] rainingCameras:', rainingCameras.length, rainingCameras);
+      console.debug('[useCamerasAndWeather] cameraList:', cameraList.length, cameraList.map(c => c.id));
+      console.debug('[useCamerasAndWeather] rainingCameraMap keys:', Array.from(rainingCameraMap.keys()));
+      
       const allRainData: RainDataPoint[] = cameraList.map((camera) => {
         const rainingCamera = rainingCameraMap.get(camera.id);
         if (rainingCamera) {
+          console.debug(`[useCamerasAndWeather] Camera ${camera.id} is raining:`, rainingCamera);
           return weatherApi.mapRainingCameraToRainPoint(rainingCamera);
         }
         // No rain for this camera
@@ -67,6 +72,7 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
         };
       });
       
+      console.debug('[useCamerasAndWeather] allRainData:', allRainData);
       setCameras(cameraList);
       setRainData(allRainData);
       setHeatmapPoints(heatmap.map((p) => [p.Lat, p.Lng, p.Intensity]));
