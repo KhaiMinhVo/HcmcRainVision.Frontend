@@ -33,8 +33,13 @@ function rawToHeatmapPoint(raw: Record<string, unknown>): HeatmapPointDto {
 
 export async function getLatestWeather(): Promise<WeatherLatestItemDto[]> {
   const data = await apiGet<unknown>('api/Weather/latest', { retries: 2 });
-  if (!Array.isArray(data)) return [];
-  return data.map((item) => rawToWeatherLatestItem((item as Record<string, unknown>) ?? {}));
+  if (!Array.isArray(data)) {
+    console.warn('[weatherApi.getLatestWeather] invalid response:', data);
+    return [];
+  }
+  const mapped = data.map((item) => rawToWeatherLatestItem((item as Record<string, unknown>) ?? {}));
+  console.debug('[weatherApi.getLatestWeather] mapped items:', mapped.length, mapped);
+  return mapped;
 }
 
 export async function getRainHeatmap(): Promise<HeatmapPointDto[]> {

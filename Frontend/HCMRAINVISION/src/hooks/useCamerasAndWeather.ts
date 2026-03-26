@@ -61,6 +61,20 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
 
   useEffect(() => {
     refetch();
+    // Auto-refresh weather data every 30 seconds (cameras & wards less frequently)
+    const weatherInterval = setInterval(async () => {
+      try {
+        const [latest, heatmap] = await Promise.all([
+          weatherApi.getLatestWeather(),
+          weatherApi.getRainHeatmap(),
+        ]);
+        setRainData(latest.map(weatherApi.mapLatestToRainPoint));
+        setHeatmapPoints(heatmap.map((p) => [p.Lat, p.Lng, p.Intensity]));
+      } catch (e) {
+        if (typeof console !== 'undefined' && console.error) console.error('[useCamerasAndWeather] weather refresh failed:', e);
+      }
+    }, 30000); // 30 seconds
+    return () => clearInterval(weatherInterval);
   }, [refetch]);
 
   return { cameras, rainData, heatmapPoints, districts, loading, error, refetch };
