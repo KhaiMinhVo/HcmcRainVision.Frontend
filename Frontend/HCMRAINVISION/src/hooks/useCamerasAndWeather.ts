@@ -52,27 +52,30 @@ export function useCamerasAndWeather(): UseCamerasAndWeatherResult {
         rainingCameraMap.set(rc.CameraId, rc);
       });
       
-      console.debug('[useCamerasAndWeather] rainingCameras:', rainingCameras.length, rainingCameras);
-      console.debug('[useCamerasAndWeather] cameraList:', cameraList.length, cameraList.map(c => c.id));
-      console.debug('[useCamerasAndWeather] rainingCameraMap keys:', Array.from(rainingCameraMap.keys()));
+      console.debug('[useCamerasAndWeather.refetch] rainingCameras:', rainingCameras.length);
+      console.debug('[useCamerasAndWeather.refetch] rainingCameras IDs:', rainingCameras.map(rc => rc.CameraId));
+      console.debug('[useCamerasAndWeather.refetch] cameraList:', cameraList.length);
+      console.debug('[useCamerasAndWeather.refetch] cameraList IDs:', cameraList.map(c => c.id));
+      console.debug('[useCamerasAndWeather.refetch] rainingCameraMap:', Array.from(rainingCameraMap.entries()));
       
       const allRainData: RainDataPoint[] = cameraList.map((camera) => {
         const rainingCamera = rainingCameraMap.get(camera.id);
+        const result = rainingCamera 
+          ? weatherApi.mapRainingCameraToRainPoint(rainingCamera)
+          : {
+              id: camera.id,
+              lat: camera.lat,
+              lng: camera.lng,
+              rainLevel: 0 as const,
+              timestamp: new Date().toISOString(),
+            };
         if (rainingCamera) {
-          console.debug(`[useCamerasAndWeather] Camera ${camera.id} is raining:`, rainingCamera);
-          return weatherApi.mapRainingCameraToRainPoint(rainingCamera);
+          console.debug(`[useCamerasAndWeather.refetch] MATCHED Camera ${camera.id}:`, result);
         }
-        // No rain for this camera
-        return {
-          id: camera.id,
-          lat: camera.lat,
-          lng: camera.lng,
-          rainLevel: 0,
-          timestamp: new Date().toISOString(),
-        };
+        return result;
       });
       
-      console.debug('[useCamerasAndWeather] allRainData:', allRainData);
+      console.debug('[useCamerasAndWeather.refetch] allRainData with rain:', allRainData.filter(d => d.rainLevel > 0));
       setCameras(cameraList);
       setRainData(allRainData);
       setHeatmapPoints(heatmap.map((p) => [p.Lat, p.Lng, p.Intensity]));

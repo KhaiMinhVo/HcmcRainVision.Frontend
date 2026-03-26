@@ -45,20 +45,27 @@ export async function getRainHeatmap(): Promise<HeatmapPointDto[]> {
 }
 
 export async function getRainingCameras(minutes = 30): Promise<RainingCameraDto[]> {
-  const response = await apiGet<{
-    Count: number;
-    Minutes: number;
-    TimeLimitUtc: string;
-    Data: unknown[];
-  }>(`api/Weather/raining-cameras?minutes=${minutes}`, { retries: 2 });
+  const endpoint = `api/Weather/raining-cameras?minutes=${minutes}`;
+  console.debug(`[weatherApi.getRainingCameras] Fetching endpoint: ${endpoint}`);
+  
+  const response = await apiGet<unknown>(endpoint, { retries: 2 });
   console.debug('[weatherApi.getRainingCameras] raw response:', response);
-  if (!response || !Array.isArray(response.Data)) {
-    console.warn('[weatherApi.getRainingCameras] invalid response:', response);
-    return [];
+  
+  // Handle both wrapped response {Count, Data[]} and direct array response
+  let dataArray: unknown[] = [];
+  if (Array.isArray(response)) {
+    dataArray = response;
+  } else if (response && typeof response === 'object' && 'Data' in response && Array.isArray((response as any).Data)) {
+    dataArray = (response as any).Data;
+  } else if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as any).data)) {
+    dataArray = (response as any).data;
   }
-  const mapped = response.Data.map((item) => {
+  
+  console.debug('[weatherApi.getRainingCameras] dataArray:', dataArray.length, dataArray);
+  
+  const mapped: RainingCameraDto[] = dataArray.map((item) => {
     const raw = item as Record<string, unknown>;
-    return {
+    const dto: RainingCameraDto = {
       CameraId: String(raw.cameraId ?? raw.CameraId ?? ''),
       CameraName: String(raw.cameraName ?? raw.CameraName ?? ''),
       Latitude: Number(raw.latitude ?? raw.Latitude ?? 0),
@@ -69,8 +76,11 @@ export async function getRainingCameras(minutes = 30): Promise<RainingCameraDto[
       LastRainAtUtc: String(raw.lastRainAtUtc ?? raw.LastRainAtUtc ?? ''),
       ImageUrl: (raw.imageUrl ?? raw.ImageUrl) as string | null | undefined,
     };
+    console.debug(`[weatherApi.getRainingCameras] Mapped camera: ${dto.CameraId} (${dto.CameraName})`, dto);
+    return dto;
   });
-  console.debug('[weatherApi.getRainingCameras] mapped:', mapped.length, mapped);
+  
+  console.debug('[weatherApi.getRainingCameras] Total mapped cameras:', mapped.length);
   return mapped;
 }
 
