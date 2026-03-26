@@ -12,7 +12,7 @@ import type { RainDataPoint, RainLevel } from '../types';
 
 function rawToWeatherLatestItem(raw: Record<string, unknown>): WeatherLatestItemDto {
   return {
-    Id: String((raw.cameraId ?? raw.CameraId) ?? ''), // Use CameraId for mapping, not WeatherLog.Id
+    Id: Number(raw.id ?? raw.Id ?? 0),
     CameraId: String((raw.cameraId ?? raw.CameraId) ?? ''),
     Latitude: Number(raw.latitude ?? raw.Latitude ?? 0),
     Longitude: Number(raw.longitude ?? raw.Longitude ?? 0),
@@ -68,10 +68,10 @@ export function mapLatestToRainPoint(item: WeatherLatestItemDto): RainDataPoint 
     rainLevel = item.Confidence >= 0.7 ? 2 : 1;
   }
   return {
-    id: String(item.Id),
+    id: item.CameraId, // Use CameraId to match with camera list
     lat: item.Latitude,
     lng: item.Longitude,
     rainLevel,
-    timestamp: item.Timestamp || item.TimeAgo, // ?u ti�n ISO timestamp, fallback sang TimeAgo
+    timestamp: item.Timestamp || item.TimeAgo,
   };
 }
